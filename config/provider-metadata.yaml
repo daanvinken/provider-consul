@@ -1,40 +1,1624 @@
-name: hashicorp/null
+name: hashicorp/consul
 resources:
-    null_resource:
+    consul_acl_auth_method:
         subCategory: ""
-        description: The null_resource resource implements the standard resource lifecycle but takes no further action. On Terraform 1.4 and later, use the terraform_data resource type https://developer.hashicorp.com/terraform/language/resources/terraform-data instead. The triggers argument allows specifying an arbitrary set of values that, when changed, will cause the resource to be replaced.
-        name: null_resource
-        title: null_resource Resource - terraform-provider-null
+        description: Starting with Consul 1.5.0, the consul_acl_auth_method resource can be used to managed Consul ACL auth methods https://www.consul.io/docs/acl/auth-methods.
+        name: consul_acl_auth_method
+        title: consul_acl_auth_method Resource - terraform-provider-consul
         examples:
-            - name: cluster
+            - name: minikube
               manifest: |-
                 {
-                  "connection": [
-                    {
-                      "host": "${element(aws_instance.cluster[*].public_ip, 0)}"
-                    }
-                  ],
-                  "provisioner": {
-                    "remote-exec": [
-                      {
-                        "inline": [
-                          "bootstrap-cluster.sh ${join(\" \",\n      aws_instance.cluster[*].private_ip)}"
-                        ]
-                      }
-                    ]
-                  },
-                  "triggers": {
-                    "cluster_instance_ids": "${join(\",\", aws_instance.cluster[*].id)}"
-                  }
+                  "config_json": "${jsonencode({\n    Host              = \"https://192.0.2.42:8443\"\n    CACert            = \"-----BEGIN CERTIFICATE-----\\n...-----END CERTIFICATE-----\\n\"\n    ServiceAccountJWT = \"eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9...\"\n  })}",
+                  "description": "dev minikube cluster",
+                  "name": "minikube",
+                  "type": "kubernetes"
                 }
+            - name: oidc
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n    AllowedRedirectURIs = [\n      \"http://localhost:8550/oidc/callback\",\n      \"http://localhost:8500/ui/oidc/callback\"\n    ]\n    BoundAudiences = [\n      \"V1RPi2MYptMV1RPi2MYptMV1RPi2MYpt\"\n    ]\n    ClaimMappings = {\n      \"http://example.com/first_name\" = \"first_name\"\n      \"http://example.com/last_name\"  = \"last_name\"\n    }\n    ListClaimMappings = {\n      \"http://consul.com/groups\" = \"groups\"\n    }\n    OIDCClientID     = \"V1RPi2MYptMV1RPi2MYptMV1RPi2MYpt\"\n    OIDCClientSecret = \"...(omitted)...\"\n    OIDCDiscoveryURL = \"https://my-corp-app-name.auth0.com/\"\n  })}",
+                  "max_token_ttl": "5m",
+                  "name": "auth0",
+                  "type": "oidc"
+                }
+        argumentDocs:
+            bind_namespace: (String) If the namespace rule's selector matches then this is used to control the namespace where the token is created.
+            config: (Map of String, Deprecated) The raw configuration for this ACL auth method.
+            config_json: (String) The raw configuration for this ACL auth method.
+            description: (String) A free form human readable description of the auth method.
+            display_name: (String) An optional name to use instead of the name attribute when displaying information about this auth method.
+            id: (String) The ID of this resource.
+            max_token_ttl: (String) The maximum life of any token created by this auth method. This attribute is required and must be set to a nonzero for the OIDC auth method.
+            name: (String) The name of the ACL auth method.
+            namespace: (String) The namespace in which to create the auth method.
+            namespace_rule: (Block List) A set of rules that control which namespace tokens created via this auth method will be created within. (see below for nested schema)
+            partition: (String) The partition the ACL auth method is associated with.
+            selector: (String) Specifies the expression used to match this namespace rule against valid identities returned from an auth method validation.
+            token_locality: (String) The kind of token that this auth method produces. This can be either 'local' or 'global'.
+            type: (String) The type of the ACL auth method.
+        importStatements: []
+    consul_acl_binding_rule:
+        subCategory: ""
+        description: Starting with Consul 1.5.0, the consul_acl_binding_rule resource can be used to managed Consul ACL binding rules.
+        name: consul_acl_binding_rule
+        title: consul_acl_binding_rule Resource - terraform-provider-consul
+        examples:
+            - name: test
+              manifest: |-
+                {
+                  "auth_method": "${consul_acl_auth_method.minikube.name}",
+                  "bind_name": "minikube",
+                  "bind_type": "service",
+                  "description": "foobar",
+                  "selector": "serviceaccount.namespace==default"
+                }
+              references:
+                auth_method: consul_acl_auth_method.minikube.name
               dependencies:
-                aws_instance.cluster: |-
+                consul_acl_auth_method.minikube: |-
                     {
-                      "ami": "ami-0dcc1e21636832c5d",
-                      "count": 3,
-                      "instance_type": "m5.large"
+                      "config": {
+                        "CACert": "-----BEGIN CERTIFICATE-----\n...-----END CERTIFICATE-----\n",
+                        "Host": "https://192.0.2.42:8443",
+                        "ServiceAccountJWT": "eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9..."
+                      },
+                      "description": "dev minikube cluster",
+                      "name": "minikube",
+                      "type": "kubernetes"
                     }
         argumentDocs:
-            id: (String) This is set to a random value at create time.
-            triggers: (Map of String) A map of arbitrary strings that, when changed, will force the null resource to be replaced, re-running any associated provisioners.
+            auth_method: (String) The name of the ACL auth method this rule apply.
+            bind_name: (String) The name to bind to a token at login-time.
+            bind_type: (String) Specifies the way the binding rule affects a token created at login.
+            bind_vars: '(Block List, Max: 1) The variables used when binding rule type is templated-policy. Can be lightly templated using HIL ${foo} syntax from available field names. (see below for nested schema)'
+            description: (String) A free form human readable description of the binding rule.
+            id: (String) The ID of this resource.
+            name: (String) The name of node, workload identity or service.
+            namespace: (String) The namespace to create the binding rule within.
+            partition: (String) The partition the ACL binding rule is associated with.
+            selector: (String) The expression used to match this rule against valid identities returned from an auth method validation.
+        importStatements: []
+    consul_acl_policy:
+        subCategory: ""
+        description: Allows Terraform to create an ACL policy
+        name: consul_acl_policy
+        title: consul_acl_policy
+        examples:
+            - name: test
+              manifest: |-
+                {
+                  "datacenters": [
+                    "dc1"
+                  ],
+                  "name": "my_policy",
+                  "rules": "node_prefix \"\" {\n  policy = \"read\"\n}\n"
+                }
+        argumentDocs:
+            datacenters: '- (Optional) The datacenters of the policy.'
+            description: '- (Optional) The description of the policy.'
+            id: '- The ID of the policy.'
+            name: '- (Required) The name of the policy.'
+            namespace: '- (Optional, Enterprise Only) The namespace to create the policy within.'
+            partition: '- (Optional, Enterprise Only) The partition the ACL policy is associated with.'
+            rules: '- (Required) The rules of the policy.'
+        importStatements: []
+    consul_acl_role:
+        subCategory: ""
+        description: The consul_acl_role can be used to manage Consul ACL roles https://developer.hashicorp.com/consul/docs/security/acl/acl-roles.
+        name: consul_acl_role
+        title: consul_acl_role Resource - terraform-provider-consul
+        examples:
+            - name: read
+              manifest: |-
+                {
+                  "description": "bar",
+                  "name": "foo",
+                  "policies": [
+                    "${consul_acl_policy.read-policy.id}"
+                  ],
+                  "service_identities": [
+                    {
+                      "service_name": "foo"
+                    }
+                  ]
+                }
+              dependencies:
+                consul_acl_policy.read-policy: |-
+                    {
+                      "datacenters": [
+                        "dc1"
+                      ],
+                      "name": "read-policy",
+                      "rules": "node \"\" { policy = \"read\" }"
+                    }
+        argumentDocs:
+            datacenter: (String) Specifies the node's datacenter.
+            datacenters: (Set of String) The datacenters the effective policy is valid within. When no datacenters are provided the effective policy is valid in all datacenters including those which do not yet exist but may in the future.
+            description: (String) A free form human readable description of the role.
+            id: (String) The ID of this resource.
+            name: (String) The name of the ACL role.
+            namespace: (String) The namespace to create the role within.
+            node_identities: (Block List) The list of node identities that should be applied to the role. (see below for nested schema)
+            node_name: (String) The name of the node.
+            partition: (String) The partition the ACL role is associated with.
+            policies: (Set of String) The list of policies that should be applied to the role. Both the policy ID or its name can be used.
+            service_identities: (Block Set) The list of service identities that should be applied to the role. (see below for nested schema)
+            service_name: (String) The name of the service.
+            template_name: (String) The name of the templated policies.
+            template_variables: '(Block List, Max: 1) The templated policy variables. (see below for nested schema)'
+            templated_policies: (Block List) The list of templated policies that should be applied to the token. (see below for nested schema)
+        importStatements:
+            - terraform import consul_acl_role.read 816a195f-6cb1-2e8d-92af-3011ae706318
+    consul_acl_role_policy_attachment:
+        subCategory: ""
+        description: 'The consul_acl_role_policy_attachment resource links a Consul ACL role and an ACL policy. The link is implemented through an update to the Consul ACL role. ~> NOTE: This resource is only useful to attach policies to an ACL role that has been created outside the current Terraform configuration. If the ACL role you need to attach a policy to has been created in the current Terraform configuration and will only be used in it, you should use the policies attribute of consul_acl_role.'
+        name: consul_acl_role_policy_attachment
+        title: consul_acl_role_policy_attachment Resource - terraform-provider-consul
+        examples:
+            - name: my_role_read_policy
+              manifest: |-
+                {
+                  "policy": "${consul_acl_policy.read_policy.name}",
+                  "role_id": "${data.consul_acl_role.test.id}"
+                }
+              references:
+                policy: consul_acl_policy.read_policy.name
+                role_id: data.consul_acl_role.test.id
+              dependencies:
+                consul_acl_policy.read_policy: |-
+                    {
+                      "datacenters": [
+                        "dc1"
+                      ],
+                      "name": "read-policy",
+                      "rules": "node \"\" { policy = \"read\" }"
+                    }
+        argumentDocs:
+            id: (String) The ID of this resource.
+            policy: (String) The policy name.
+            role_id: (String) The id of the role.
+        importStatements:
+            - terraform import consul_acl_role_policy_attachment.my_role_read_policy 624d94ca-bc5c-f960-4e83-0a609cf588be:policy_name
+    consul_acl_token:
+        subCategory: ""
+        description: 'The consul_acl_token resource writes an ACL token into Consul. ~> NOTE: The consul_acl_token resource does not save the secret ID of the generated token to the Terraform state to avoid leaking it when it is not needed. If you need to get the secret ID after creating the ACL token you can use the consul_acl_token_secret_id datasource.'
+        name: consul_acl_token
+        title: consul_acl_token Resource - terraform-provider-consul
+        examples:
+            - name: test
+              manifest: |-
+                {
+                  "description": "my test token",
+                  "local": true,
+                  "policies": [
+                    "${consul_acl_policy.agent.name}"
+                  ]
+                }
+              dependencies:
+                consul_acl_policy.agent: |-
+                    {
+                      "name": "agent",
+                      "rules": "node_prefix \"\" {\n  policy = \"read\"\n}\n"
+                    }
+                random_uuid.test: '{}'
+            - name: test_predefined_id
+              manifest: |-
+                {
+                  "accessor_id": "${random_uuid.test_uuid.result}",
+                  "description": "my test uuid token",
+                  "local": true,
+                  "policies": [
+                    "${consul_acl_policy.agent.name}"
+                  ]
+                }
+              references:
+                accessor_id: random_uuid.test_uuid.result
+              dependencies:
+                consul_acl_policy.agent: |-
+                    {
+                      "name": "agent",
+                      "rules": "node_prefix \"\" {\n  policy = \"read\"\n}\n"
+                    }
+                random_uuid.test: '{}'
+        argumentDocs:
+            accessor_id: (String) The uuid of the token. If omitted, Consul will generate a random uuid.
+            datacenter: (String) The datacenter of the node.
+            datacenters: (List of String) Specifies the datacenters the effective policy is valid within.
+            description: (String) The description of the token.
+            expiration_time: (String) If set this represents the point after which a token should be considered revoked and is eligible for destruction.
+            id: (String) The ID of this resource.
+            local: (Boolean) The flag to set the token local to the current datacenter.
+            name: (String) The name of node, workload identity or service.
+            namespace: (String) The namespace to create the token within.
+            node_identities: (Block List) The list of node identities that should be applied to the token. (see below for nested schema)
+            node_name: (String) The name of the node.
+            partition: (String) The partition the ACL token is associated with.
+            policies: (Set of String) The list of policies attached to the token.
+            roles: (Set of String) The list of roles attached to the token.
+            service_identities: (Block List) The list of service identities that should be applied to the token. (see below for nested schema)
+            service_name: (String) The name of the service.
+            template_name: (String) The name of the templated policies.
+            template_variables: '(Block List, Max: 1) The templated policy variables. (see below for nested schema)'
+            templated_policies: (Block List) The list of templated policies that should be applied to the token. (see below for nested schema)
+        importStatements:
+            - |-
+              terraform import consul_acl_token.anonymous 00000000-0000-0000-0000-000000000002
+              terraform import consul_acl_token.master-token 624d94ca-bc5c-f960-4e83-0a609cf588be
+    consul_acl_token_policy_attachment:
+        subCategory: ""
+        description: Allows Terraform to create a link between an ACL token and a policy
+        name: consul_acl_token_policy_attachment
+        title: consul_acl_token_policy_attachment
+        examples:
+            - name: attachment
+              manifest: |-
+                {
+                  "policy": "${consul_acl_policy.agent.name}",
+                  "token_id": "00000000-0000-0000-0000-000000000002"
+                }
+              dependencies:
+                consul_acl_policy.agent: |-
+                    {
+                      "name": "agent",
+                      "rules": "node_prefix \"\" {\n  policy = \"read\"\n}\n"
+                    }
+            - name: attachment
+              manifest: |-
+                {
+                  "policy": "${consul_acl_policy.agent.name}",
+                  "token_id": "9b20de68-3ea2-4b70-b4f1-506afad062a4"
+                }
+              dependencies:
+                consul_acl_policy.agent: |-
+                    {
+                      "name": "agent",
+                      "rules": "node_prefix \"\" {\n  policy = \"read\"\n}\n"
+                    }
+        argumentDocs:
+            id: '- The attachment ID.'
+            policy: '- (Required) The name of the policy attached to the token.'
+            token_id: '- (Required) The id of the token.'
+        importStatements: []
+    consul_acl_token_role_attachment:
+        subCategory: ""
+        description: Allows Terraform to create a link between an ACL token and a role
+        name: consul_acl_token_role_attachment
+        title: consul_acl_token_role_attachment
+        examples:
+            - name: attachment
+              manifest: |-
+                {
+                  "role_id": "${consul_acl_role.role.id}",
+                  "token_id": "00000000-0000-0000-0000-000000000002"
+                }
+              references:
+                role_id: consul_acl_role.role.id
+              dependencies:
+                consul_acl_role.role: |-
+                    {
+                      "description": "Foo",
+                      "name": "foo",
+                      "service_identities": [
+                        {
+                          "service_name": "foo"
+                        }
+                      ]
+                    }
+            - name: attachment
+              manifest: |-
+                {
+                  "role_id": "${consul_acl_role.role.id}",
+                  "token_id": "00000000-0000-0000-0000-000000000002"
+                }
+              references:
+                role_id: consul_acl_role.role.id
+              dependencies:
+                consul_acl_role.role: |-
+                    {
+                      "description": "Foo",
+                      "name": "foo",
+                      "service_identities": [
+                        {
+                          "service_name": "foo"
+                        }
+                      ]
+                    }
+        argumentDocs:
+            id: '- The attachment ID.'
+            role_id: '- (Required) The id of the role to attach to the token.'
+            token_id: '- (Required) The id of the token.'
+        importStatements: []
+    consul_admin_partition:
+        subCategory: ""
+        description: Manage a Consul Admin Partition.
+        name: consul_admin_partition
+        title: consul_admin_partition
+        examples:
+            - name: na_west
+              manifest: |-
+                {
+                  "description": "Partition for North America West",
+                  "name": "na-west"
+                }
+        argumentDocs:
+            description: '- (Optional) Free form partition description.'
+            name: '- (Required) The partition name. This must be a valid DNS hostname label.'
+        importStatements: []
+    consul_agent_service:
+        subCategory: ""
+        description: Provides access to Agent Service data in Consul. This can be used to define a service associated with a particular agent. Currently, defining health checks for an agent service is not supported.
+        name: consul_agent_service
+        title: consul_agent_service
+        examples:
+            - name: app
+              manifest: |-
+                {
+                  "address": "www.google.com",
+                  "name": "google",
+                  "port": 80,
+                  "tags": [
+                    "tag0",
+                    "tag1"
+                  ]
+                }
+        argumentDocs:
+            address: |-
+                - (Optional) The address of the service. Defaults to the
+                address of the agent.
+            id: '- The ID of the service, defaults to the value of name.'
+            name: '- (Required) The name of the service.'
+            port: '- (Optional) The port of the service.'
+            tags: |-
+                - (Optional) A list of values that are opaque to Consul,
+                but can be used to distinguish between services or nodes.
+        importStatements: []
+    consul_autopilot_config:
+        subCategory: ""
+        description: Provides access to the Autopilot Configuration of Consul.
+        name: consul_autopilot_config
+        title: consul_autopilot_config
+        examples:
+            - name: config
+              manifest: |-
+                {
+                  "cleanup_dead_servers": false,
+                  "last_contact_threshold": "1s",
+                  "max_trailing_logs": 500
+                }
+        argumentDocs:
+            cleanup_dead_servers: |-
+                - (Optional) Whether to remove failing servers when a
+                replacement comes online. Defaults to true.
+            datacenter: |-
+                - (Optional) The datacenter to use. This overrides the agent's
+                default datacenter and the datacenter in the provider setup.
+            disable_upgrade_migration: |-
+                - (Optional) Whether to disable upgrade migrations.
+                Defaults to false.
+            last_contact_threshold: |-
+                - (Optional) The time after which a server is
+                considered as unhealthy and will be removed. Defaults to "200ms".
+            max_trailing_logs: |-
+                - (Optional) The maximum number of Raft log entries a
+                server can trail the leader. Defaults to 250.
+            redundancy_zone_tag: |-
+                - (Optional) The redundancy zone
+                tag to use. Consul will try to keep one voting server by zone to take advantage
+                of isolated failure domains. Defaults to an empty string.
+            server_stabilization_time: |-
+                - (Optional) The period to wait for a server to be
+                healthy and stable before being promoted to a full, voting member. Defaults to
+                "10s".
+            upgrade_version_tag: |-
+                - (Optional) The tag to override the version information
+                used during a migration. Defaults to an empty string.
+        importStatements: []
+    consul_catalog_entry:
+        subCategory: ""
+        description: Registers a node or service with the Consul Catalog.  Currently, defining health checks is not supported.
+        name: consul_catalog_entry
+        title: consul_catalog_entry
+        examples:
+            - name: app
+              manifest: |-
+                {
+                  "address": "192.168.10.10",
+                  "node": "foobar",
+                  "service": {
+                    "address": "127.0.0.1",
+                    "id": "redis1",
+                    "name": "redis",
+                    "port": 8000,
+                    "tags": [
+                      "master",
+                      "v1"
+                    ]
+                  }
+                }
+        argumentDocs:
+            address: |-
+                - (Required) The address of the node being added to,
+                or referenced in the catalog.
+            datacenter: |-
+                - (Optional) The datacenter to use. This overrides the
+                agent's default datacenter and the datacenter in the provider setup.
+            node: |-
+                - (Required) The name of the node being added to, or
+                referenced in the catalog.
+            service: |-
+                - (Optional) A service to optionally associated with
+                the node. Supported values are documented below.
+            service.address: |-
+                - (Optional) The address of the service. Defaults to the
+                node address.
+            service.id: '- (Optional) The ID of the service. Defaults to the name.'
+            service.name: '- (Required) The name of the service'
+            service.port: '- (Optional) The port of the service.'
+            service.tags: |-
+                - (Optional) A list of values that are opaque to Consul,
+                but can be used to distinguish between services or nodes.
+            token: '- (Optional) ACL token.'
+        importStatements: []
+    consul_certificate_authority:
+        subCategory: ""
+        description: 'The consul_certificate_authority resource can be used to manage the configuration of the Certificate Authority used by Consul Connect https://www.consul.io/docs/connect/ca. -> Note: The keys in the config argument must be using Camel case.'
+        name: consul_certificate_authority
+        title: consul_certificate_authority Resource - terraform-provider-consul
+        examples:
+            - name: connect
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n    LeafCertTTL         = \"24h\"\n    RotationPeriod      = \"2160h\"\n    IntermediateCertTTL = \"8760h\"\n  })}",
+                  "connect_provider": "consul"
+                }
+            - name: connect
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n    Address             = \"http://localhost:8200\"\n    Token               = \"...\"\n    RootPKIPath         = \"connect-root\"\n    IntermediatePKIPath = \"connect-intermediate\"\n  })}",
+                  "connect_provider": "vault"
+                }
+            - name: connect
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n    ExistingARN = \"arn:aws:acm-pca:region:account:certificate-authority/12345678-1234-1234-123456789012\"\n  })}",
+                  "connect_provider": "aws-pca"
+                }
+        argumentDocs:
+            config: (Map of String, Deprecated) The raw configuration to use for the chosen provider. For more information on configuring the Connect CA providers, see Provider Config.
+            config_json: (String) The raw configuration to use for the chosen provider. For more information on configuring the Connect CA providers, see Provider Config.
+            connect_provider: (String) Specifies the CA provider type to use.
+            id: (String) The ID of this resource.
+        importStatements:
+            - terraform import certificate_authority.connect connect-ca
+    consul_config_entry:
+        subCategory: ""
+        description: Registers a configuration entry in Consul.
+        name: consul_config_entry
+        title: config_entry
+        examples:
+            - name: proxy_defaults
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n    Config = {\n      local_connect_timeout_ms = 1000\n      handshake_timeout_ms     = 10000\n    }\n  })}",
+                  "kind": "proxy-defaults",
+                  "name": "global"
+                }
+            - name: web
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n    Protocol    = \"http\"\n  })}",
+                  "kind": "service-defaults",
+                  "name": "web"
+                }
+            - name: admin
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n    Protocol    = \"http\"\n  })}",
+                  "kind": "service-defaults",
+                  "name": "admin"
+                }
+            - name: service_resolver
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n    DefaultSubset = \"v1\"\n\n    Subsets = {\n      \"v1\" = {\n        Filter = \"Service.Meta.version == v1\"\n      }\n      \"v2\" = {\n        Filter = \"Service.Meta.version == v2\"\n      }\n    }\n  })}",
+                  "kind": "service-resolver",
+                  "name": "${consul_config_entry.web.name}"
+                }
+              references:
+                name: consul_config_entry.web.name
+            - name: service_splitter
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n    Splits = [\n      {\n        Weight        = 90\n        ServiceSubset = \"v1\"\n      },\n      {\n        Weight        = 10\n        ServiceSubset = \"v2\"\n      },\n    ]\n  })}",
+                  "kind": "service-splitter",
+                  "name": "${consul_config_entry.service_resolver.name}"
+                }
+              references:
+                name: consul_config_entry.service_resolver.name
+            - name: service_router
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n    Routes = [\n      {\n        Match = {\n          HTTP = {\n            PathPrefix = \"/admin\"\n          }\n        }\n\n        Destination = {\n          Service = \"admin\"\n        }\n      },\n      # NOTE: a default catch-all will send unmatched traffic to \"web\"\n    ]\n  })}",
+                  "kind": "service-router",
+                  "name": "web"
+                }
+            - name: ingress_gateway
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n    TLS = {\n      Enabled = true\n    }\n    Listeners = [{\n      Port     = 8000\n      Protocol = \"http\"\n      Services = [{ Name  = \"*\" }]\n    }]\n  })}",
+                  "kind": "ingress-gateway",
+                  "name": "us-east-ingress"
+                }
+            - name: terminating_gateway
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n    Services = [{ Name = \"billing\" }]\n  })}",
+                  "kind": "terminating-gateway",
+                  "name": "us-west-gateway"
+                }
+            - name: service_intentions
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n    Sources = [\n      {\n        Action     = \"allow\"\n        Name       = \"frontend-webapp\"\n        Precedence = 9\n        Type       = \"consul\"\n      },\n      {\n        Action     = \"allow\"\n        Name       = \"nightly-cronjob\"\n        Precedence = 9\n        Type       = \"consul\"\n      }\n    ]\n  })}",
+                  "kind": "service-intentions",
+                  "name": "api-service"
+                }
+            - name: sd
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n    Protocol = \"http\"\n  })}",
+                  "kind": "service-defaults",
+                  "name": "fort-knox"
+                }
+            - name: jwt_provider
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n\t\tIssuer = \"test-issuer\"\n\t\tJSONWebKeySet = {\n\t\t\tRemote = {\n\t\t\t\tURI = \"https://127.0.0.1:9091\"\n\t\t\t\tFetchAsynchronously = true\n\t\t\t}\n\t\t}\n\t\tForwarding = {\n\t\t\tHeaderName = \"test-token\"\n\t\t}\n\t})}",
+                  "kind": "jwt-provider",
+                  "name": "test-provider"
+                }
+            - name: service_intentions
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n    Sources = [\n      {\n        Name        = \"contractor-webapp\"\n        Permissions = [\n          {\n            Action = \"allow\"\n            HTTP   = {\n              Methods   = [\"GET\", \"HEAD\"]\n              PathExact = \"/healtz\"\n            }\n            JWT = {\n              Providers = [\n                {\n                  Name = consul_config_entry.jwt_provider.name\n                }\n              ]\n            }\n          }\n        ]\n        Precedence = 9\n        Type       = \"consul\"\n      },\n      {\n        Name        = \"admin-dashboard-webapp\",\n        Permissions = [\n          {\n            Action = \"deny\",\n            HTTP = {\n              PathPrefix= \"/debugz\"\n            }\n          },\n          {\n            Action= \"allow\"\n            HTTP = {\n              PathPrefix= \"/\"\n            }\n          }\n        ],\n        Precedence = 9\n        Type       = \"consul\"\n      }\n    ]\n  })}",
+                  "kind": "service-intentions",
+                  "name": "${consul_config_entry.sd.name}"
+                }
+              references:
+                name: consul_config_entry.sd.name
+            - name: exported_services
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n\t\tServices = [{\n\t\t\tName = \"test\"\n\t\t\tNamespace = \"default\"\n\t\t\tConsumers = [{\n\t\t\t\tPartition = \"default\"\n\t\t\t}]\n\t\t}]\n\t})}",
+                  "kind": "exported-services",
+                  "name": "test"
+                }
+            - name: mesh
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n\t\tTransparentProxy = {\n\t\t\tMeshDestinationsOnly = true\n\t\t}\n\t})}",
+                  "kind": "mesh",
+                  "name": "mesh",
+                  "partition": "default"
+                }
+            - name: jwt_provider
+              manifest: |-
+                {
+                  "config_json": "${jsonencode({\n    Issuer = \"https://your.issuer.com\"\n    JSONWebKeySet = {\n      Remote = {\n        URI = \"https://your-remote.jwks.com\"\n        FetchAsynchronously = true\n        CacheDuration = \"10s\"\n      }\n    }\n    Forwarding = {\n      HeaderName = \"test-token\"\n    }\n  })}",
+                  "kind": "jwt-provider",
+                  "name": "provider-name"
+                }
+        argumentDocs:
+            config_json: '- (Optional) An arbitrary map of configuration values.'
+            id: '- The id of the configuration entry.'
+            kind: '- (Required) The kind of configuration entry to register.'
+            name: '- (Required) The name of the configuration entry being registered.'
+            namespace: '- (Optional, Enterprise Only) The namespace to create the config entry within.'
+            partition: '- (Optional, Enterprise Only) The partition the config entry is associated with.'
+        importStatements: []
+    consul_config_entry_service_defaults:
+        subCategory: ""
+        description: The consul_config_entry_service_defaults resource configures a service defaults https://developer.hashicorp.com/consul/docs/connect/config-entries/service-defaults config entry that contains common configuration settings for service mesh services, such as upstreams and gateways.
+        name: consul_config_entry_service_defaults
+        title: consul_config_entry_service_defaults Resource - terraform-provider-consul
+        examples:
+            - name: dashboard
+              manifest: |-
+                {
+                  "name": "dashboard",
+                  "upstream_config": [
+                    {
+                      "defaults": {
+                        "limits": {
+                          "max_concurrent_requests": 512,
+                          "max_connections": 512,
+                          "max_pending_requests": 512
+                        },
+                        "mesh_gateway": {
+                          "mode": "local"
+                        }
+                      },
+                      "overrides": [
+                        {
+                          "mesh_gateway": [
+                            {
+                              "mode": "remote"
+                            }
+                          ],
+                          "name": "counting"
+                        }
+                      ]
+                    }
+                  ]
+                }
+        argumentDocs:
+            addresses: (List of String)
+            arguments: (Map of String)
+            balance_inbound_connections: (String) Specifies the strategy for allocating inbound connections to the service across Envoy proxy threads.
+            balance_outbound_connections: (String) Sets the strategy for allocating outbound connections from upstreams across Envoy proxy threads.
+            base_ejection_time: (String) Specifies the minimum amount of time that an ejected host must remain outside the cluster before rejoining.
+            checks: (Boolean)
+            connect_timeout_ms: (Number)
+            consul_version: (String)
+            defaults: (Block Set) Specifies configurations that set default upstream settings. For information about overriding the default configurations for in for individual upstreams, refer to UpstreamConfig.Overrides. (see below for nested schema)
+            destination: (Block Set) Configures the destination for service traffic through terminating gateways. (see below for nested schema)
+            dialed_directly: (Boolean)
+            enforcing_consecutive_5xx: (Number) Specifies a percentage that indicates how many times out of 100 that Consul ejects the host when it detects an outlier status.
+            envoy_extensions: (Block List) List of extensions to modify Envoy proxy configuration. (see below for nested schema)
+            envoy_listener_json: (String)
+            envoy_version: (String)
+            expose: '(Block Set, Min: 1) Specifies default configurations for exposing HTTP paths through Envoy. (see below for nested schema)'
+            external_sni: (String) Specifies the TLS server name indication (SNI) when federating with an external system.
+            id: (String) The ID of this resource.
+            interval: (String) Specifies the time between checks.
+            limits: (Block Set) Map that specifies a set of limits to apply to when connecting upstream services. (see below for nested schema)
+            listener_port: (Number)
+            local_connect_timeout_ms: (Number) Specifies the number of milliseconds allowed for establishing connections to the local application instance before timing out.
+            local_path_port: (Number)
+            local_request_timeout_ms: (Number) Specifies the timeout for HTTP requests to the local application instance.
+            max_concurrent_requests: (Number) Specifies the maximum number of concurrent requests.
+            max_connections: (Number) Specifies the maximum number of connections a service instance can establish against the upstream.
+            max_ejection_percent: (Number) Specifies the maximum percentage of an upstream cluster that Consul ejects when the proxy reports an outlier.
+            max_failures: (Number) Specifies the number of consecutive failures allowed per check interval. If exceeded, Consul removes the host from the load balancer.
+            max_inbound_connections: (Number) Specifies the maximum number of concurrent inbound connections to each service instance.
+            max_pending_requests: (Number) Specifies the maximum number of requests that are queued while waiting for a connection to establish.
+            mesh_gateway: (Block Set) Specifies the default mesh gateway mode field for the service. (see below for nested schema)
+            meta: (Map of String) Specifies a set of custom key-value pairs to add to the Consul KV store.
+            mode: (String) Specifies a mode for how the service directs inbound and outbound traffic.
+            mutual_tls_mode: (String) Controls whether mutual TLS is required for incoming connections to this service. This setting is only supported for services with transparent proxy enabled.
+            name: (String) Specifies the name of the service you are setting the defaults for.
+            namespace: (String) Specifies the Consul namespace that the configuration entry applies to.
+            outbound_listener_port: (Number)
+            overrides: (Block List) Specifies options that override the default upstream configurations for individual upstreams. (see below for nested schema)
+            partition: (String) Specifies the name of the name of the Consul admin partition that the configuration entry applies to. Refer to Admin Partitions for additional information.
+            passive_health_check: (Block Set) Map that specifies a set of rules that enable Consul to remove hosts from the upstream cluster that are unreachable or that return errors. (see below for nested schema)
+            path: (String)
+            paths: (Block List) (see below for nested schema)
+            peer: (String) Specifies the peer name of the upstream service that the configuration applies to.
+            port: (Number)
+            protocol: (String) Specifies the default protocol for the service.
+            required: (Boolean)
+            transparent_proxy: (Block Set) Controls configurations specific to proxies in transparent mode. Refer to Transparent Proxy Mode for additional information. (see below for nested schema)
+            upstream_config: (Block Set) Controls default upstream connection settings and custom overrides for individual upstream services. (see below for nested schema)
+        importStatements: []
+    consul_config_entry_service_intentions:
+        subCategory: ""
+        description: The consul_service_intentions_config_entry resource configures service intentions https://developer.hashicorp.com/consul/docs/connect/config-entries/service-intentions that are configurations for controlling access between services in the service mesh. A single service intentions configuration entry specifies one destination service and one or more L4 traffic sources, L7 traffic sources, or combination of traffic sources.
+        name: consul_config_entry_service_intentions
+        title: consul_config_entry_service_intentions Resource - terraform-provider-consul
+        examples:
+            - name: web
+              manifest: |-
+                {
+                  "jwt": [
+                    {
+                      "providers": [
+                        {
+                          "name": "${consul_config_entry.jwt_provider.name}",
+                          "verify_claims": [
+                            {
+                              "path": [
+                                "perms",
+                                "role"
+                              ],
+                              "value": "admin"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "name": "web",
+                  "sources": [
+                    {
+                      "action": "allow",
+                      "name": "frontend-webapp",
+                      "type": "consul"
+                    },
+                    {
+                      "action": "deny",
+                      "name": "nightly-cronjob",
+                      "type": "consul"
+                    }
+                  ]
+                }
+              references:
+                jwt.providers.name: consul_config_entry.jwt_provider.name
+              dependencies:
+                consul_config_entry.jwt_provider: |-
+                    {
+                      "config_json": "${jsonencode({\n    ClockSkewSeconds = 30\n    Issuer           = \"test-issuer\"\n    JSONWebKeySet = {\n      Remote = {\n        URI                 = \"https://127.0.0.1:9091\"\n        FetchAsynchronously = true\n      }\n    }\n  })}",
+                      "kind": "jwt-provider",
+                      "name": "okta"
+                    }
+        argumentDocs:
+            action: (String) Specifies the action to take when the source sends traffic to the destination service.
+            description: (String) Specifies a description of the intention.
+            exact: (String) Specifies a value for the header key set in the Name field. If the request header value matches the Exact value, Consul applies the permission.
+            headers: (Block List) Specifies a header name and matching criteria for HTTP request headers. (see below for nested schema)
+            http: '(Block Set, Min: 1) Specifies a set of HTTP-specific match criteria. (see below for nested schema)'
+            id: (String) The ID of this resource.
+            invert: (Boolean) Inverts the matching logic configured in the Header.
+            jwt: (Block Set) Specifies a JSON Web Token provider configured in a JWT provider configuration entry, as well as additional configurations for verifying a service's JWT before authorizing communication between services (see below for nested schema)
+            meta: (Map of String) Specifies key-value pairs to add to the KV store.
+            methods: (List of String) Specifies a list of HTTP methods.
+            name: (String) Specifies a name of the destination service for all intentions defined in the configuration entry.
+            namespace: (String) Specifies the namespace to apply the configuration entry.
+            partition: (String) Specifies the admin partition to apply the configuration entry.
+            path: (List of String) Specifies the path to the claim in the JSON web token.
+            path_exact: (String) Specifies an exact path to match on the HTTP request path.
+            path_prefix: (String) Specifies a path prefix to match on the HTTP request path.
+            path_regex: (String) Defines a regular expression to match on the HTTP request path.
+            peer: (String) Specifies the name of a peered Consul cluster that the intention allows or denies traffic from
+            permissions: (Block List) Specifies a list of permissions for L7 traffic sources. The list contains one or more actions and a set of match criteria for each action. (see below for nested schema)
+            precedence: (Number) The Precedence field contains a read-only integer. Consul generates the value based on name configurations for the source and destination services.
+            prefix: (String) Specifies a prefix value for the header key set in the Name field.
+            present: (Boolean) Enables a match if the header configured in the Name field appears in the request. Consul matches on any value as long as the header key appears in the request.
+            providers: (Block List) Specifies the names of one or more previously configured JWT provider configuration entries, which include the information necessary to validate a JSON web token. (see below for nested schema)
+            regex: (String) Specifies a regular expression pattern as the value for the header key set in the Name field.
+            sameness_group: (String) Specifies the name of a sameness group that the intention allows or denies traffic from.
+            sources: (Block List) List of configurations that define intention sources and the authorization granted to the sources. (see below for nested schema)
+            suffix: (String) Specifies a suffix value for the header key set in the Name field.
+            type: (String) Specifies the type of destination service that the configuration entry applies to.
+            value: (String) Specifies the value to match on when verifying the the claim designated in path.
+            verify_claims: (Block List) Specifies additional token information to verify beyond what is configured in the JWT provider configuration entry. (see below for nested schema)
+        importStatements: []
+    consul_config_entry_service_resolver:
+        subCategory: ""
+        description: The consul_config_entry_service_resolver resource configures a service resolver https://developer.hashicorp.com/consul/docs/connect/config-entries/service-resolver that creates named subsets of service instances and define their behavior when satisfying upstream requests.
+        name: consul_config_entry_service_resolver
+        title: consul_config_entry_service_resolver Resource - terraform-provider-consul
+        examples:
+            - name: web
+              manifest: |-
+                {
+                  "connect_timeout": "15s",
+                  "default_subset": "v1",
+                  "failover": [
+                    {
+                      "datacenters": [
+                        "dc2"
+                      ],
+                      "subset_name": "v2"
+                    },
+                    {
+                      "datacenters": [
+                        "dc3",
+                        "dc4"
+                      ],
+                      "subset_name": "*"
+                    }
+                  ],
+                  "name": "web",
+                  "redirect": [
+                    {
+                      "datacenter": "dc2",
+                      "service": "web"
+                    }
+                  ],
+                  "subsets": [
+                    {
+                      "filter": "Service.Meta.version == v1",
+                      "name": "v1"
+                    },
+                    {
+                      "Filter": "Service.Meta.version == v2",
+                      "name": "v2"
+                    }
+                  ]
+                }
+        argumentDocs:
+            choice_count: (Number)
+            connect_timeout: (String) Specifies the timeout duration for establishing new network connections to this service.
+            cookie_config: (Block Set) Specifies additional configuration options for the cookie hash policy type. (see below for nested schema)
+            datacenter: (String) Specifies the WAN federated datacenter to use for the failover target. If empty, the current datacenter is used.
+            datacenters: (List of String) Specifies an ordered list of datacenters at the failover location to attempt connections to during a failover scenario. When Consul cannot establish a connection with the first datacenter in the list, it proceeds sequentially until establishing a connection with another datacenter.
+            default_subset: (String) Specifies a defined subset of service instances to use when no explicit subset is requested. If this parameter is not specified, Consul uses the unnamed default subset.
+            failover: (Block Set) Specifies controls for rerouting traffic to an alternate pool of service instances if the target service fails. (see below for nested schema)
+            field: (String) Specifies the attribute type to hash on. You cannot specify the Field parameter if SourceIP is also configured.
+            field_value: (String) Specifies the value to hash, such as a header name, cookie name, or a URL query parameter name.
+            filter: (String) Specifies an expression that filters the DNS elements of service instances that belong to the subset. If empty, all healthy instances of a service are returned.
+            hash_policies: (Block List) Specifies a list of hash policies to use for hashing load balancing algorithms. Consul evaluates hash policies individually and combines them so that identical lists result in the same hash. (see below for nested schema)
+            id: (String) The ID of this resource.
+            least_request_config: (Block Set) Specifies configuration for the least_request policy type. (see below for nested schema)
+            load_balancer: (Block Set) Specifies the load balancing policy and configuration for services issuing requests to this upstream. (see below for nested schema)
+            maximum_ring_size: (Number) Determines the maximum number of entries in the hash ring.
+            meta: (Map of String) Specifies key-value pairs to add to the KV store.
+            minimum_ring_size: (Number) Determines the minimum number of entries in the hash ring.
+            name: (String) Specifies a name for the configuration entry.
+            namespace: (String) Specifies the namespace that the service resolver applies to.
+            only_passing: (Boolean) Determines if instances that return a warning from a health check are allowed to resolve a request. When set to false, instances with passing and warning states are considered healthy. When set to true, only instances with a passing health check state are considered healthy.
+            partition: (String) Specifies the admin partition that the service resolver applies to.
+            path: (String) Specifies the path to set for the cookie.
+            peer: (String) Specifies the destination cluster peer to resolve the target service name from.
+            policy: (String) Specifies the type of load balancing policy for selecting a host.
+            redirect: (Block Set) Specifies redirect instructions for local service traffic so that services deployed to a different network location resolve the upstream request instead. (see below for nested schema)
+            request_timeout: (String) Specifies the timeout duration for receiving an HTTP response from this service.
+            ring_hash_config: (Block Set) Specifies configuration for the ring_hash policy type. (see below for nested schema)
+            sameness_group: (String) Specifies the sameness group at the failover location where the failover services are deployed.
+            service: (String) Specifies the name of the service to resolve at the failover location during a failover scenario.
+            service_subset: (String) Specifies the name of a subset of service instances to resolve at the failover location during a failover scenario.
+            session: (Boolean) Directs Consul to generate a session cookie with no expiration.
+            source_ip: (Boolean) Determines if the hash type should be source IP address.
+            subset_name: (String) Name of subset.
+            subsets: (Block Set) Specifies names for custom service subsets and the conditions under which service instances belong to each subset. (see below for nested schema)
+            targets: (Block List) Specifies a fixed list of failover targets to try during failover. This list can express complicated failover scenarios. (see below for nested schema)
+            terminal: (Boolean) Determines if Consul should stop computing the hash when multiple hash policies are present.
+            ttl: (String) Specifies the TTL for generated cookies. Cannot be specified for session cookies.
+        importStatements: []
+    consul_config_entry_service_router:
+        subCategory: ""
+        description: The consul_config_entry_service_router resource configures a service router https://developer.hashicorp.com/consul/docs/connect/config-entries/service-router to redirect a traffic request for a service to one or more specific service instances.
+        name: consul_config_entry_service_router
+        title: consul_config_entry_service_router Resource - terraform-provider-consul
+        examples:
+            - name: foo
+              manifest: |-
+                {
+                  "name": "${consul_config_entry.web.name}",
+                  "routes": [
+                    {
+                      "destination": [
+                        {
+                          "service": "${consul_config_entry.admin_service.name}"
+                        }
+                      ],
+                      "match": [
+                        {
+                          "http": [
+                            {
+                              "path_prefix": "/admin"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              references:
+                name: consul_config_entry.web.name
+                routes.destination.service: consul_config_entry.admin_service.name
+              dependencies:
+                consul_config_entry_service_defaults.admin_service_defaults: |-
+                    {
+                      "name": "dashboard",
+                      "protocol": "http"
+                    }
+        argumentDocs:
+            add: (Map of String) Defines a set of key-value pairs to add to the header. Use header names as the keys.
+            destination: '(Block List, Max: 1) Specifies the target service to route matching requests to, as well as behavior for the request to follow when routed. (see below for nested schema)'
+            exact: (String) Specifies that a request matches when the header with the given name is this exact value.
+            header: (Block List) Specifies information in the HTTP request header to match with. (see below for nested schema)
+            http: '(Block List, Max: 1) Specifies a set of HTTP criteria used to evaluate incoming L7 traffic for matches. (see below for nested schema)'
+            id: (String) The ID of this resource.
+            idle_timeout: (String) Specifies the total amount of time permitted for the request stream to be idle.
+            invert: (Boolean) Specifies that the logic for the HTTP header match should be inverted.
+            match: '(Block List, Max: 1) Describes a set of criteria that Consul compares incoming L7 traffic with. (see below for nested schema)'
+            meta: (Map of String) Specifies key-value pairs to add to the KV store.
+            methods: (List of String) Specifies HTTP methods that the match applies to.
+            name: (String) Specifies a name for the configuration entry.
+            namespace: (String) Specifies the namespace to apply the configuration entry.
+            num_retries: (Number) Specifies the number of times to retry the request when a retry condition occurs.
+            partition: (String) Specifies the admin partition to apply the configuration entry.
+            path_exact: (String) Specifies the exact path to match on the HTTP request path.
+            path_prefix: (String) Specifies the path prefix to match on the HTTP request path.
+            path_regex: (String) Specifies a regular expression to match on the HTTP request path.
+            prefix: (String) Specifies that a request matches when the header with the given name has this prefix.
+            prefix_rewrite: (String) Specifies rewrites to the HTTP request path before proxying it to its final destination.
+            present: (Boolean) Specifies that a request matches when the value in the name argument is present anywhere in the HTTP header.
+            query_param: (Block List) Specifies information to match to on HTTP query parameters. (see below for nested schema)
+            regex: (String) Specifies that a request matches when the header with the given name matches this regular expression.
+            remove: (List of String) Defines a list of headers to remove.
+            request_headers: '(Block List, Max: 1) Specifies a set of HTTP-specific header modification rules applied to requests routed with the service router. (see below for nested schema)'
+            request_timeout: (String) Specifies the total amount of time permitted for the entire downstream request to be processed, including retry attempts.
+            response_headers: '(Block List, Max: 1) Specifies a set of HTTP-specific header modification rules applied to responses routed with the service router. (see below for nested schema)'
+            retry_on: (List of String) Specifies a list of conditions for Consul to retry requests based on the response from an upstream service.
+            retry_on_connect_failure: (Boolean) Specifies that connection failure errors that trigger a retry request.
+            retry_on_status_codes: (List of Number) Specifies a list of integers for HTTP response status codes that trigger a retry request.
+            routes: (Block List) Defines the possible routes for L7 requests. (see below for nested schema)
+            service: (String) Specifies the name of the service to resolve.
+            service_subset: (String) Specifies a named subset of the given service to resolve instead of the one defined as that service's default_subset in the service resolver configuration entry.
+            set: (Map of String) Defines a set of key-value pairs to add to the request header or to replace existing header values with.
+            suffix: (String) Specifies that a request matches when the header with the given name has this suffix.
+        importStatements: []
+    consul_config_entry_service_splitter:
+        subCategory: ""
+        description: The consul_config_entry_service_splitter resource configures a service splitter https://developer.hashicorp.com/consul/docs/connect/config-entries/service-splitter that will redirect a percentage of incoming traffic requests for a service to one or more specific service instances.
+        name: consul_config_entry_service_splitter
+        title: consul_config_entry_service_splitter Resource - terraform-provider-consul
+        examples:
+            - name: foo
+              manifest: |-
+                {
+                  "meta": {
+                    "key": "value"
+                  },
+                  "name": "${consul_config_entry_service_resolver.service_resolver.name}",
+                  "splits": [
+                    {
+                      "request_headers": [
+                        {
+                          "set": {
+                            "x-web-version": "from-v1"
+                          }
+                        }
+                      ],
+                      "response_headers": [
+                        {
+                          "set": {
+                            "x-web-version": "to-v1"
+                          }
+                        }
+                      ],
+                      "service": "web",
+                      "service_subset": "v1",
+                      "weight": 80
+                    },
+                    {
+                      "request_headers": [
+                        {
+                          "set": {
+                            "x-web-version": "from-v2"
+                          }
+                        }
+                      ],
+                      "response_headers": [
+                        {
+                          "set": {
+                            "x-web-version": "to-v2"
+                          }
+                        }
+                      ],
+                      "service": "web",
+                      "service_subset": "v2",
+                      "weight": 10
+                    },
+                    {
+                      "service": "web",
+                      "service_subset": "v2",
+                      "weight": 10
+                    }
+                  ]
+                }
+              references:
+                name: consul_config_entry_service_resolver.service_resolver.name
+              dependencies:
+                consul_config_entry.web: |-
+                    {
+                      "config_json": "${jsonencode({\n    Protocol         = \"http\"\n    Expose           = {}\n    MeshGateway      = {}\n    TransparentProxy = {}\n  })}",
+                      "kind": "service-defaults",
+                      "name": "web"
+                    }
+                consul_config_entry_service_resolver.service_resolver: |-
+                    {
+                      "default_subset": "v1",
+                      "name": "service-resolver",
+                      "subsets": [
+                        {
+                          "filter": "Service.Meta.version == v1",
+                          "name": "v1"
+                        },
+                        {
+                          "Filter": "Service.Meta.version == v2",
+                          "name": "v2"
+                        }
+                      ]
+                    }
+        argumentDocs:
+            add: (Map of String) Map of one or more key-value pairs. Defines a set of key-value pairs to add to the header. Use header names as the keys. Header names are not case-sensitive. If header values with the same name already exist, the value is appended and Consul applies both headers.
+            id: (String) The ID of this resource.
+            meta: (Map of String) Specifies key-value pairs to add to the KV store.
+            name: (String) Specifies a name for the configuration entry.
+            namespace: (String) Specifies the namespace to apply the configuration entry.
+            partition: (String) Specifies the admin partition to apply the configuration entry.
+            remove: (List of String) Defines an list of headers to remove. Consul removes only headers containing exact matches. Header names are not case-sensitive.
+            request_headers: '(Block List, Max: 1) Specifies a set of HTTP-specific header modification rules applied to requests routed with the service split. You cannot configure request headers if the listener protocol is set to tcp. (see below for nested schema)'
+            response_headers: '(Block List, Max: 1) Specifies a set of HTTP-specific header modification rules applied to responses routed with the service split. You cannot configure request headers if the listener protocol is set to tcp. (see below for nested schema)'
+            service: (String) Specifies the name of the service to resolve.
+            service_subset: (String) Specifies a subset of the service to resolve. A service subset assigns a name to a specific subset of discoverable service instances within a datacenter, such as version2 or canary. All services have an unnamed default subset that returns all healthy instances.
+            set: (Map of String) Map of one or more key-value pairs. Defines a set of key-value pairs to add to the request header or to replace existing header values with. Use header names as the keys. Header names are not case-sensitive. If header values with the same names already exist, Consul replaces the header values.
+            splits: '(Block List, Min: 1) Defines how much traffic to send to sets of service instances during a traffic split. (see below for nested schema)'
+            weight: (Number) Specifies the percentage of traffic sent to the set of service instances specified in the service field. Each weight must be a floating integer between 0 and 100. The smallest representable value is .01. The sum of weights across all splits must add up to 100.
+        importStatements:
+            - terraform import consul_config_entry_service_splitter.foo web
+    consul_config_entry_v2_exported_services Resource - terraform-provider-consul:
+        subCategory: ""
+        name: consul_config_entry_v2_exported_services Resource - terraform-provider-consul
+        title: consul_config_entry_v2_exported_services Resource - terraform-provider-consul
+        argumentDocs:
+            id: (String) The ID of this resource.
+            kind: (String) The kind of exported services config (ExportedServices, NamespaceExportedServices, PartitionExportedServices).
+            name: (String) The name of the config entry to read.
+            namespace: (String) The namespace the config entry is associated with.
+            partition: (String) The partition the config entry is associated with.
+            partition_consumers: (List of String) The exported service partition consumers.
+            peer_consumers: (List of String) The exported service peer consumers.
+            sameness_group_consumers: (List of String) The exported service sameness group consumers.
+            services: (List of String) The exported services.
+        importStatements: []
+    consul_intention:
+        subCategory: ""
+        description: A resource that can create intentions for Consul Connect.
+        name: consul_intention
+        title: consul_intention
+        examples:
+            - name: database
+              manifest: |-
+                {
+                  "action": "allow",
+                  "destination_name": "db",
+                  "source_name": "api"
+                }
+            - name: database
+              manifest: |-
+                {
+                  "action": "allow",
+                  "destination_name": "${consul_service.pg.name}",
+                  "source_name": "api"
+                }
+        argumentDocs:
+            action: '- (Required, string) The intention action. Must be one of allow or deny.'
+            datacenter: |-
+                - (Optional) The datacenter to use. This overrides the
+                agent's default datacenter and the datacenter in the provider setup.
+            description: |-
+                - (Optional, string) Optional description that can be used by Consul
+                tooling, but is not used internally.
+            destination_name: |-
+                - (Required, string) The name of the destination service for the intention. This
+                service does not have to exist.
+            destination_namespace: |-
+                - (Optional, Enterprise Only) The destination
+                namespace of the intention.
+            id: '- The ID of the intention.'
+            meta: |-
+                - (Optional, map) Key/value pairs that are opaque to Consul and are associated
+                with the intention.
+            source_name: |-
+                - (Required, string) The name of the source service for the intention. This
+                service does not have to exist.
+            source_namespace: |-
+                - (Optional, Enterprise Only) The source namespace of the
+                intention.
+        importStatements: []
+    consul_key_prefix:
+        subCategory: ""
+        description: Allows Terraform to manage a namespace of Consul keys that share a common name prefix.
+        name: consul_key_prefix
+        title: consul_key_prefix
+        examples:
+            - name: myapp_config
+              manifest: |-
+                {
+                  "datacenter": "nyc1",
+                  "path_prefix": "myapp/config/",
+                  "subkey": [
+                    {
+                      "flags": 2,
+                      "path": "database/password",
+                      "value": "${aws_db_instance.app.password}"
+                    }
+                  ],
+                  "subkeys": {
+                    "database/hostname": "${aws_db_instance.app.address}",
+                    "database/name": "${aws_db_instance.app.name}",
+                    "database/port": "${aws_db_instance.app.port}",
+                    "database/username": "${aws_db_instance.app.username}",
+                    "elb_cname": "${aws_elb.app.dns_name}",
+                    "s3_bucket_name": "${aws_s3_bucket.app.bucket}"
+                  },
+                  "token": "abcd"
+                }
+        argumentDocs:
+            datacenter: |-
+                - (Optional) The datacenter to use. This overrides the
+                agent's default datacenter and the datacenter in the provider setup.
+            namespace: '- (Optional, Enterprise Only) The namespace to create the keys within.'
+            partition: '- (Optional, Enterprise Only) The admin partition to create the keys within.'
+            path_prefix: |-
+                - (Required) Specifies the common prefix shared by all keys
+                that will be managed by this resource instance. In most cases this will
+                end with a slash, to manage a "folder" of keys.
+            subkey: |-
+                - (Optional) A subkey to add. Supported values documented below.
+                Multiple blocks supported.
+            subkey.flags: |-
+                - (Optional) An unsigned integer value
+                to attach to the key (defaults to 0).
+            subkey.path: |-
+                - (Required) This is the path (which will be appended to the given
+                path_prefix) in Consul that should be written to.
+            subkey.value: '- (Required) The value to write to the given path.'
+            subkeys: |-
+                - (Optional) A mapping from subkey name (which will be appended
+                to the given path_prefix) to the value that should be stored at that key.
+                Use slashes, as shown in the above example, to create "sub-folders" under
+                the given path prefix.
+            token: |-
+                - (Optional) The ACL token to use. This overrides the
+                token that the agent provides by default.
+        importStatements: []
+    consul_keys:
+        subCategory: ""
+        description: Writes values into the Consul key/value store.
+        name: consul_keys
+        title: consul_keys
+        examples:
+            - name: app
+              manifest: |-
+                {
+                  "datacenter": "nyc1",
+                  "key": [
+                    {
+                      "path": "service/app/elb_address",
+                      "value": "${aws_elb.app.dns_name}"
+                    }
+                  ],
+                  "token": "abcd"
+                }
+        argumentDocs:
+            datacenter: |-
+                - (Optional) The datacenter to use. This overrides the
+                agent's default datacenter and the datacenter in the provider setup.
+            key: |-
+                - (Required) Specifies a key in Consul to be written.
+                Supported values documented below.
+            key.delete: |-
+                - (Optional) If true, then the key will be deleted when
+                either its configuration block is removed from the configuration or
+                the entire resource is destroyed. Otherwise, it will be left in Consul.
+                Defaults to false.
+            key.flags: |-
+                - (Optional) An unsigned integer value
+                to attach to the key (defaults to 0).
+            key.path: '- (Required) This is the path in Consul that should be written to.'
+            key.value: '- (Required) The value to write to the given path.'
+            namespace: '- (Optional, Enterprise Only) The namespace to create the keys within.'
+            partition: '- (Optional, Enterprise Only) The partition to create the keys within.'
+            token: |-
+                - (Optional) The ACL token to use. This overrides the
+                token that the agent provides by default.
+        importStatements: []
+    consul_license:
+        subCategory: ""
+        description: Manage the Consul Enterprise license.
+        name: consul_license
+        title: consul_license
+        examples:
+            - name: license
+              manifest: |-
+                {
+                  "license": "${file(\"license.hclic\")}"
+                }
+        argumentDocs:
+            customer_id: '- The ID of the customer the license is attached to.'
+            datacenter: |-
+                - (Optional) The datacenter to use. This overrides the
+                agent's default datacenter and the datacenter in the provider setup.
+            expiration_time: '- The expiration time of the license.'
+            features: '- The features for which the license is valid.'
+            installation_id: '- The ID of the current installation.'
+            issue_time: '- The date the license was issued.'
+            license: '- (Required) The Consul license to use.'
+            license_id: '- The ID of the license used.'
+            product: '- The product for which the license is valid.'
+            start_time: '- The start time of the license.'
+            valid: '- Whether the license is valid.'
+            warnings: '- A list of warning messages regarding the license validity.'
+        importStatements: []
+    consul_namespace:
+        subCategory: ""
+        description: Manage a Consul namespace.
+        name: consul_namespace
+        title: consul_namespace
+        examples:
+            - name: production
+              manifest: |-
+                {
+                  "description": "Production namespace",
+                  "meta": {
+                    "foo": "bar"
+                  },
+                  "name": "production"
+                }
+        argumentDocs:
+            description: '- (Optional) Free form namespace description.'
+            meta: '- (Optional) Specifies arbitrary KV metadata to associate with the namespace.'
+            name: '- (Required) The namespace name.'
+            partition: '- (Optional, Enterprise Only) The partition to create the namespace within.'
+            policy_defaults: '- (Optional) The list of default policies that should be applied to all tokens created in this namespace.'
+            role_defaults: '- (Optional) The list of default roles that should be applied to all tokens created in this namespace.'
+        importStatements: []
+    consul_namespace_policy_attachment:
+        subCategory: ""
+        description: Allows Terraform to add a policy as a default for a namespace
+        name: consul_namespace_policy_attachment
+        title: consul_namespace_policy_attachment
+        examples:
+            - name: attachment
+              manifest: |-
+                {
+                  "namespace": "default",
+                  "policy": "${consul_acl_policy.agent.name}"
+                }
+              references:
+                policy: consul_acl_policy.agent.name
+              dependencies:
+                consul_acl_policy.agent: |-
+                    {
+                      "name": "agent",
+                      "rules": "node_prefix \"\" {\n  policy = \"read\"\n}\n"
+                    }
+            - name: attachment
+              manifest: |-
+                {
+                  "namespace": "qa",
+                  "policy": "${consul_acl_policy.agent.name}"
+                }
+              references:
+                policy: consul_acl_policy.agent.name
+              dependencies:
+                consul_acl_policy.agent: |-
+                    {
+                      "name": "agent",
+                      "rules": "node_prefix \"\" {\n  policy = \"read\"\n}\n"
+                    }
+        argumentDocs:
+            id: '- The attachment ID.'
+            namespace: '- (Required) The namespace to attach the policy to.'
+            policy: '- (Required) The name of the policy attached to the namespace.'
+        importStatements: []
+    consul_namespace_role_attachment:
+        subCategory: ""
+        description: Allows Terraform to add a role as a default for a namespace
+        name: consul_namespace_role_attachment
+        title: consul_namespace_role_attachment
+        examples:
+            - name: attachment
+              manifest: |-
+                {
+                  "namespace": "default",
+                  "role": "${consul_acl_role.agent.name}"
+                }
+              references:
+                role: consul_acl_role.agent.name
+              dependencies:
+                consul_acl_role.agent: |-
+                    {
+                      "name": "agent"
+                    }
+            - name: attachment
+              manifest: |-
+                {
+                  "namespace": "qa",
+                  "role": "${consul_acl_role.agent.name}"
+                }
+              references:
+                role: consul_acl_role.agent.name
+              dependencies:
+                consul_acl_role.agent: |-
+                    {
+                      "name": "agent"
+                    }
+        argumentDocs:
+            id: '- The attachment ID.'
+            namespace: '- (Required) The namespace to attach the role to.'
+            role: '- (Required) The name of the role attached to the namespace.'
+        importStatements: []
+    consul_network_area:
+        subCategory: ""
+        description: Manage Network Areas.
+        name: consul_network_area
+        title: consul_network_area
+        examples:
+            - name: dc2
+              manifest: |-
+                {
+                  "peer_datacenter": "dc2",
+                  "retry_join": [
+                    "1.2.3.4"
+                  ],
+                  "use_tls": true
+                }
+        argumentDocs:
+            datacenter: |-
+                - (Optional) The datacenter to use. This overrides the
+                agent's default datacenter and the datacenter in the provider setup.
+            peer_datacenter: |-
+                - (Required) The name of the Consul datacenter that will be
+                joined to form the area.
+            retry_join: |-
+                - (Optional) Specifies a list of Consul servers to attempt to
+                join. Servers can be given as IP, IP:port, hostname, or hostname:port.
+            token: |-
+                - (Optional) The ACL token to use. This overrides the
+                token that the agent provides by default.
+            use_tls: |-
+                - (Optional) Specifies whether gossip over this area should be
+                encrypted with TLS if possible. Defaults to false.
+        importStatements: []
+    consul_node:
+        subCategory: ""
+        description: Provides access to Node data in Consul. This can be used to define a node.
+        name: consul_node
+        title: consul_node
+        examples:
+            - name: foobar
+              manifest: |-
+                {
+                  "address": "192.168.10.10",
+                  "name": "foobar"
+                }
+        argumentDocs:
+            address: '- (Required) The address of the node being added to, or referenced in the catalog.'
+            datacenter: '- (Optional) The datacenter to use. This overrides the agent''s default datacenter and the datacenter in the provider setup.'
+            meta: '- (Optional, map) Key/value pairs that are associated with the node.'
+            name: '- (Required) The name of the node being added to, or referenced in the catalog.'
+            partition: '- (Optional, Enterprise Only) The partition the node is associated with.'
+        importStatements: []
+    consul_peering:
+        subCategory: ""
+        description: 'Cluster Peering https://www.consul.io/docs/connect/cluster-peering can be used to create connections between two or more independent clusters so that services deployed to different partitions or datacenters can communicate. The cluster_peering resource can be used to establish the peering after a peering token has been generated. ~> Cluster peering is currently in technical preview: Functionality associated with cluster peering is subject to change. You should never use the technical preview release in secure environments or production scenarios. Features in technical preview may have performance issues, scaling issues, and limited support. The functionality described here is available only in Consul version 1.13.0 and later.'
+        name: consul_peering
+        title: consul_peering Resource - terraform-provider-consul
+        examples:
+            - name: eu-us
+              manifest: |-
+                {
+                  "meta": {
+                    "hello": "world"
+                  },
+                  "peer_name": "eu-cluster",
+                  "peering_token": "${consul_peering_token.token.peering_token}",
+                  "provider": "${consul.eu}"
+                }
+              references:
+                peering_token: consul_peering_token.token.peering_token
+                provider: consul.eu
+              dependencies:
+                consul_peering_token.eu-us: |-
+                    {
+                      "peer_name": "eu-cluster",
+                      "provider": "${consul.us}"
+                    }
+        argumentDocs:
+            deleted_at: (String)
+            id: (String) The ID of this resource.
+            meta: (Map of String) Specifies KV metadata to associate with the peering. This parameter is not required and does not directly impact the cluster peering process.
+            partition: (String)
+            peer_ca_pems: (List of String)
+            peer_id: (String)
+            peer_name: (String) The name assigned to the peer cluster. The peer_name is used to reference the peer cluster in service discovery queries and configuration entries such as service-intentions. This field must be a valid DNS hostname label.
+            peer_server_addresses: (List of String)
+            peer_server_name: (String)
+            peering_token: (String, Sensitive) The peering token fetched from the peer cluster.
+            state: (String)
+        importStatements: []
+    consul_peering_token:
+        subCategory: ""
+        description: Cluster Peering https://www.consul.io/docs/connect/cluster-peering can be used to create connections between two or more independent clusters so that services deployed to different partitions or datacenters can communicate. The cluster_peering_token resource can be used to generate a peering token that can later be used to establish a peering connection.
+        name: consul_peering_token
+        title: consul_peering_token Resource - terraform-provider-consul
+        examples:
+            - name: token
+              manifest: |-
+                {
+                  "peer_name": "eu-cluster"
+                }
+        argumentDocs:
+            id: (String) The ID of this resource.
+            meta: (Map of String) Specifies KV metadata to associate with the peering. This parameter is not required and does not directly impact the cluster peering process.
+            partition: (String)
+            peer_name: (String) The name assigned to the peer cluster. The peer_name is used to reference the peer cluster in service discovery queries and configuration entries such as service-intentions. This field must be a valid DNS hostname label.
+            peering_token: (String, Sensitive) The generated peering token
+            server_external_addresses: (List of String) The addresses for the cluster that generates the peering token. Addresses take the form {host or IP}:port. You can specify one or more load balancers or external IPs that route external traffic to this cluster's Consul servers.
+        importStatements: []
+    consul_prepared_query:
+        subCategory: ""
+        description: Allows Terraform to manage a Consul prepared query. Managing prepared queries is done using Consul's REST API. This resource is useful to provide a consistent and declarative way of managing prepared queries in your Consul cluster using Terraform.
+        name: consul_prepared_query
+        title: consul_prepared_query Resource - terraform-provider-consul
+        examples:
+            - name: myapp-query
+              manifest: |-
+                {
+                  "datacenter": "us-central1",
+                  "dns": [
+                    {
+                      "ttl": "30s"
+                    }
+                  ],
+                  "failover": [
+                    {
+                      "datacenters": [
+                        "us-west1",
+                        "us-east-2",
+                        "asia-east1"
+                      ],
+                      "nearest_n": 3
+                    }
+                  ],
+                  "name": "myquery",
+                  "near": "_agent",
+                  "only_passing": true,
+                  "service": "myapp",
+                  "stored_token": "wxyz",
+                  "tags": [
+                    "active",
+                    "!standby"
+                  ],
+                  "token": "abcd"
+                }
+            - name: service-near-self
+              manifest: |-
+                {
+                  "connect": true,
+                  "datacenter": "nyc1",
+                  "dns": [
+                    {
+                      "ttl": "5m"
+                    }
+                  ],
+                  "failover": [
+                    {
+                      "datacenters": [
+                        "dc2",
+                        "dc3",
+                        "dc4"
+                      ],
+                      "nearest_n": 3
+                    }
+                  ],
+                  "name": "",
+                  "near": "_agent",
+                  "only_passing": true,
+                  "service": "${match(1)}",
+                  "stored_token": "wxyz",
+                  "template": [
+                    {
+                      "regexp": "^(.*)-near-self$",
+                      "type": "name_prefix_match"
+                    }
+                  ],
+                  "token": "abcd"
+                }
+        argumentDocs:
+            connect: (Boolean) When true the prepared query will return connect proxy services for a queried service.  Conditions such as tags in the prepared query will be matched against the proxy service. Defaults to false.
+            datacenter: (String) The datacenter to use. This overrides the agent's default datacenter and the datacenter in the provider setup.
+            datacenters: (List of String) Remote datacenters to return results from.
+            dns: '(Block List, Max: 1) Settings for controlling the DNS response details. (see below for nested schema)'
+            failover: '(Block List, Max: 1) Options for controlling behavior when no healthy nodes are available in the local DC. (see below for nested schema)'
+            id: (String) The ID of this resource.
+            ignore_check_ids: (List of String) Specifies a list of check IDs that should be ignored when filtering unhealthy instances. This is mostly useful in an emergency or as a temporary measure when a health check is found to be unreliable. Being able to ignore it in centrally-defined queries can be simpler than de-registering the check as an interim solution until the check can be fixed.
+            name: (String) The name of the prepared query. Used to identify the prepared query during requests. Can be specified as an empty string to configure the query as a catch-all.
+            near: (String) Allows specifying the name of a node to sort results near using Consul's distance sorting and network coordinates. The magic _agent value can be used to always sort nearest the node servicing the request.
+            nearest_n: (Number) Return results from this many datacenters, sorted in ascending order of estimated RTT.
+            node_meta: (Map of String) Specifies a list of user-defined key/value pairs that will be used for filtering the query results to nodes with the given metadata values present.
+            only_passing: (Boolean) When true, the prepared query will only return nodes with passing health checks in the result.
+            peer: (String) Specifies a cluster peer to use for failover.
+            regexp: (String) The regular expression to match with. When using name_prefix_match, this regex is applied against the query name.
+            remove_empty_tags: (Boolean) If set to true, will cause the tags list inside the service structure to be stripped of any empty strings.
+            service: (String) The name of the service to query
+            service_meta: (Map of String) Specifies a list of user-defined key/value pairs that will be used for filtering the query results to services with the given metadata values present.
+            session: (String) The name of the Consul session to tie this query's lifetime to.  This is an advanced parameter that should not be used without a complete understanding of Consul sessions and the implications of their use (it is recommended to leave this blank in nearly all cases).  If this parameter is omitted the query will not expire.
+            stored_token: (String) The ACL token to store with the prepared query. This token will be used by default whenever the query is executed.
+            tags: (Set of String) The list of required and/or disallowed tags.  If a tag is in this list it must be present.  If the tag is preceded with a "!" then it is disallowed.
+            targets: (Block List) Specifies a sequential list of remote datacenters and cluster peers to failover to if there are no healthy service instances in the local datacenter. This option cannot be used with nearest_n or datacenters. (see below for nested schema)
+            template: '(Block List, Max: 1) Query templating options. This is used to make a single prepared query respond to many different requests (see below for nested schema)'
+            token: (String, Sensitive, Deprecated) The ACL token to use when saving the prepared query. This overrides the token that the agent provides by default.
+            ttl: (String) The TTL to send when returning DNS results.
+            type: (String) The type of template matching to perform. Currently only name_prefix_match is supported.
+        importStatements:
+            - terraform import consul_prepared_query.my_service 71ecfb82-717a-4258-b4b6-2fb75144d856
+    consul_service:
+        subCategory: ""
+        description: 'A high-level resource for creating a Service in Consul in the Consul catalog. This is appropriate for registering external services https://www.consul.io/docs/guides/external.html and can be used to create services addressable by Consul that cannot be registered with a local agent https://www.consul.io/docs/agent/basics.html. -> NOTE: If a Consul agent is running on the node where this service is registered, it is not recommended to use this resource as the service will be removed during the next anti-entropy synchronization https://www.consul.io/docs/architecture/anti-entropy.'
+        name: consul_service
+        title: consul_service Resource - terraform-provider-consul
+        examples:
+            - name: google
+              manifest: |-
+                {
+                  "name": "google",
+                  "node": "${consul_node.compute.name}",
+                  "port": 80,
+                  "tags": [
+                    "tag0"
+                  ]
+                }
+              dependencies:
+                consul_node.compute: |-
+                    {
+                      "address": "www.google.com",
+                      "name": "compute-google"
+                    }
+            - name: google
+              manifest: |-
+                {
+                  "name": "google",
+                  "node": "google",
+                  "port": 443
+                }
+            - name: redis
+              manifest: |-
+                {
+                  "check": [
+                    {
+                      "check_id": "service:redis1",
+                      "deregister_critical_service_after": "30s",
+                      "header": [
+                        {
+                          "name": "foo",
+                          "value": [
+                            "test"
+                          ]
+                        },
+                        {
+                          "name": "bar",
+                          "value": [
+                            "test"
+                          ]
+                        }
+                      ],
+                      "http": "https://www.hashicorptest.com",
+                      "interval": "5s",
+                      "method": "PUT",
+                      "name": "Redis health check",
+                      "status": "passing",
+                      "timeout": "1s",
+                      "tls_skip_verify": false
+                    }
+                  ],
+                  "name": "redis",
+                  "node": "redis",
+                  "port": 6379
+                }
+        argumentDocs:
+            address: (String) The address of the service. Defaults to the address of the node.
+            check: (Block Set) (see below for nested schema)
+            check_id: (String) An ID, unique per agent.
+            datacenter: (String) The datacenter to use. This overrides the agent's default datacenter and the datacenter in the provider setup.
+            deregister_critical_service_after: (String) The time after which the service is automatically deregistered when in the critical state. Defaults to 30s. Setting to 0 will disable.
+            enable_tag_override: (Boolean) Specifies to disable the anti-entropy feature for this service's tags. Defaults to false.
+            external: (Boolean, Deprecated)
+            header: (Block Set) The headers to send for an HTTP check. The attributes of each header is given below. (see below for nested schema)
+            http: (String) The HTTP endpoint to call for an HTTP check.
+            id: (String) The ID of this resource.
+            interval: (String) The interval to wait between each health-check invocation.
+            meta: (Map of String) A map of arbitrary KV metadata linked to the service instance.
+            method: (String) The method to use for HTTP health-checks. Defaults to GET.
+            name: (String) The name of the service.
+            namespace: (String) The namespace to create the service within.
+            node: (String) The name of the node the to register the service on.
+            notes: (String) An opaque field meant to hold human readable text.
+            partition: (String) The partition the service is associated with.
+            port: (Number) The port of the service.
+            service_id: (String) If the service ID is not provided, it will be defaulted to the value of the name attribute.
+            status: (String) The initial health-check status.
+            tags: (List of String) A list of values that are opaque to Consul, but can be used to distinguish between services or nodes.
+            tcp: (String) The TCP address and port to connect to for a TCP check.
+            timeout: (String) Specifies a timeout for outgoing connections in the case of a HTTP or TCP check.
+            tls_skip_verify: (Boolean) Whether to deactivate certificate verification for HTTP health-checks. Defaults to false.
+            value: (List of String) The header's list of values.
         importStatements: []

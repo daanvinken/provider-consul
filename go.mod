@@ -1,4 +1,4 @@
-module github.com/upbound/upjet-provider-template
+module github.com/daanvinken/provider-consul
 
 go 1.21
 
