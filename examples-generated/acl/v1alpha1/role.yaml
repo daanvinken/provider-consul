@@ -1,0 +1,16 @@
+apiVersion: acl.daanvinken.io/v1alpha1
+kind: Role
+metadata:
+  annotations:
+    meta.upbound.io/example-id: acl/v1alpha1/role
+  labels:
+    testing.upbound.io/example-name: read
+  name: read
+spec:
+  forProvider:
+    description: bar
+    name: foo
+    policies:
+    - ${consul_acl_policy.read-policy.id}
+    serviceIdentities:
+    - serviceName: foo
