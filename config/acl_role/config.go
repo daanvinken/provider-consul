@@ -1,4 +1,4 @@
-package repository
+package acl_role
 
 import "github.com/crossplane/upjet/pkg/config"
 
