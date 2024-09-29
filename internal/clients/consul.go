@@ -66,6 +66,9 @@ func TerraformSetupBuilder(version, providerSource, providerVersion string) terr
 		if v, ok := creds["token"]; ok {
 			ps.Configuration["token"] = v
 		}
+		if v, ok := creds["address"]; ok {
+			ps.Configuration["address"] = v
+		}
 		return ps, nil
 	}
 }

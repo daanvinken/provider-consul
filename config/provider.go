@@ -7,10 +7,11 @@ package config
 import (
 	// Note(turkenh): we are importing this to embed provider schema document
 	_ "embed"
+	"github.com/daanvinken/provider-consul/config/acl_policy"
+	"github.com/daanvinken/provider-consul/config/acl_role"
+	"github.com/daanvinken/provider-consul/config/acl_token"
 
 	ujconfig "github.com/crossplane/upjet/pkg/config"
-
-	"github.com/daanvinken/provider-consul/config/acl_role"
 )
 
 const (
@@ -37,6 +38,8 @@ func GetProvider() *ujconfig.Provider {
 	for _, configure := range []func(provider *ujconfig.Provider){
 		// add custom config functions
 		acl_role.Configure,
+		acl_token.Configure,
+		acl_policy.Configure,
 	} {
 		configure(pc)
 	}
