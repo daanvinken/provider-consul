@@ -14,3 +14,20 @@ spec:
     - ${consul_acl_policy.read-policy.id}
     serviceIdentities:
     - serviceName: foo
+
+---
+
+apiVersion: acl.daanvinken.io/v1alpha1
+kind: Policy
+metadata:
+  annotations:
+    meta.upbound.io/example-id: acl/v1alpha1/role
+  labels:
+    testing.upbound.io/example-name: read-policy
+  name: read-policy
+spec:
+  forProvider:
+    datacenters:
+    - dc1
+    name: read-policy
+    rules: node "" { policy = "read" }

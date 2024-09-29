@@ -9,7 +9,9 @@ import (
 
 	"github.com/crossplane/upjet/pkg/controller"
 
+	policy "github.com/daanvinken/provider-consul/internal/controller/acl/policy"
 	role "github.com/daanvinken/provider-consul/internal/controller/acl/role"
+	token "github.com/daanvinken/provider-consul/internal/controller/acl/token"
 	providerconfig "github.com/daanvinken/provider-consul/internal/controller/providerconfig"
 )
 
@@ -17,7 +19,9 @@ import (
 // the supplied manager.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
 	for _, setup := range []func(ctrl.Manager, controller.Options) error{
+		policy.Setup,
 		role.Setup,
+		token.Setup,
 		providerconfig.Setup,
 	} {
 		if err := setup(mgr, o); err != nil {
