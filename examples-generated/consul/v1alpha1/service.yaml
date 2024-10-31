@@ -1,0 +1,30 @@
+apiVersion: consul.daanvinken.io/v1alpha1
+kind: Service
+metadata:
+  annotations:
+    meta.upbound.io/example-id: consul/v1alpha1/service
+  labels:
+    testing.upbound.io/example-name: google
+  name: google
+spec:
+  forProvider:
+    name: google
+    node: foobar
+    port: 80
+    tags:
+    - tag0
+
+---
+
+apiVersion: consul.daanvinken.io/v1alpha1
+kind: Node
+metadata:
+  annotations:
+    meta.upbound.io/example-id: consul/v1alpha1/service
+  labels:
+    testing.upbound.io/example-name: compute
+  name: compute
+spec:
+  forProvider:
+    address: www.google.com
+    name: compute-google

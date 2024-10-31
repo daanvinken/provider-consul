@@ -11,9 +11,12 @@ import "github.com/crossplane/upjet/pkg/config"
 var ExternalNameConfigs = map[string]config.ExternalName{
 	// Import requires using a randomly generated ID from provider: nl-2e21sda
 	//TODO (daanvinken) Fix external names; TemplatedStringAsIdentifier("", "crossplane-managed:{{ .external_name }}:{{ .parameters.id }}")
-	"consul_acl_role":   config.IdentifierFromProvider,
-	"consul_acl_policy": config.IdentifierFromProvider,
-	"consul_acl_token":  config.IdentifierFromProvider}
+	"consul_acl_role":       config.IdentifierFromProvider,
+	"consul_acl_policy":     config.IdentifierFromProvider,
+	"consul_prepared_query": config.IdentifierFromProvider,
+	"consul_node":           config.IdentifierFromProvider,
+	"consul_service":        config.IdentifierFromProvider,
+	"consul_acl_token":      config.IdentifierFromProvider}
 
 // ExternalNameConfigurations applies all external name configs listed in the
 // table ExternalNameConfigs and sets the version of those resources to v1beta1

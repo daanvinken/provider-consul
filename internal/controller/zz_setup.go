@@ -12,6 +12,9 @@ import (
 	policy "github.com/daanvinken/provider-consul/internal/controller/acl/policy"
 	role "github.com/daanvinken/provider-consul/internal/controller/acl/role"
 	token "github.com/daanvinken/provider-consul/internal/controller/acl/token"
+	node "github.com/daanvinken/provider-consul/internal/controller/consul/node"
+	service "github.com/daanvinken/provider-consul/internal/controller/consul/service"
+	query "github.com/daanvinken/provider-consul/internal/controller/prepared/query"
 	providerconfig "github.com/daanvinken/provider-consul/internal/controller/providerconfig"
 )
 
@@ -22,6 +25,9 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 		policy.Setup,
 		role.Setup,
 		token.Setup,
+		node.Setup,
+		service.Setup,
+		query.Setup,
 		providerconfig.Setup,
 	} {
 		if err := setup(mgr, o); err != nil {

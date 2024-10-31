@@ -1,0 +1,29 @@
+apiVersion: prepared.daanvinken.io/v1alpha1
+kind: PreparedQuery
+metadata:
+  annotations:
+    meta.upbound.io/example-id: prepared/v1alpha1/query
+  labels:
+    testing.upbound.io/example-name: myapp-query
+  name: myapp-query
+spec:
+  forProvider:
+    datacenter: dc1
+    dns:
+    - ttl: 30s
+    failover:
+    - datacenters:
+      - dc1
+      nearestN: 3
+    name: myapp
+    near: _agent
+    onlyPassing: true
+    service: myapp
+    storedToken: wxyz
+    tags:
+    - active
+    - '!standby'
+    tokenSecretRef:
+      key: example-key
+      name: example-secret
+      namespace: upbound-system

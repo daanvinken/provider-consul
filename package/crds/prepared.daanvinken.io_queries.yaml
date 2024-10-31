@@ -1,0 +1,809 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+  name: preparedqueries.prepared.daanvinken.io
+spec:
+  group: prepared.daanvinken.io
+  names:
+    categories:
+    - crossplane
+    - managed
+    - consul
+    kind: PreparedQuery
+    listKind: PreparedQueryList
+    plural: preparedqueries
+    singular: preparedquery
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=='Synced')].status
+      name: SYNCED
+      type: string
+    - jsonPath: .status.conditions[?(@.type=='Ready')].status
+      name: READY
+      type: string
+    - jsonPath: .metadata.annotations.crossplane\.io/external-name
+      name: EXTERNAL-NAME
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Query is the Schema for the Querys API.  Managing prepared queries
+          is done using Consul's REST API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: QuerySpec defines the desired state of Query
+            properties:
+              deletionPolicy:
+                default: Delete
+                description: |-
+                  DeletionPolicy specifies what will happen to the underlying external
+                  when this managed resource is deleted - either "Delete" or "Orphan" the
+                  external resource.
+                  This field is planned to be deprecated in favor of the ManagementPolicies
+                  field in a future release. Currently, both could be set independently and
+                  non-default values would be honored if the feature flag is enabled.
+                  See the design doc for more information: https://github.com/crossplane/crossplane/blob/499895a25d1a1a0ba1604944ef98ac7a1a71f197/design/design-doc-observe-only-resources.md?plain=1#L223
+                enum:
+                - Orphan
+                - Delete
+                type: string
+              forProvider:
+                properties:
+                  connect:
+                    description: |-
+                      (Boolean) When true the prepared query will return connect proxy services for a queried service.  Conditions such as tags in the prepared query will be matched against the proxy service. Defaults to false.
+                      When `true` the prepared query will return connect proxy services for a queried service.  Conditions such as `tags` in the prepared query will be matched against the proxy service. Defaults to false.
+                    type: boolean
+                  datacenter:
+                    description: |-
+                      (String) The datacenter to use. This overrides the agent's default datacenter and the datacenter in the provider setup.
+                      The datacenter to use. This overrides the agent's default datacenter and the datacenter in the provider setup.
+                    type: string
+                  dns:
+                    description: |-
+                      (Block List, Max: 1) Settings for controlling the DNS response details. (see below for nested schema)
+                      Settings for controlling the DNS response details.
+                    items:
+                      properties:
+                        ttl:
+                          description: |-
+                            (String) The TTL to send when returning DNS results.
+                            The TTL to send when returning DNS results.
+                          type: string
+                      type: object
+                    type: array
+                  failover:
+                    description: |-
+                      (Block List, Max: 1) Options for controlling behavior when no healthy nodes are available in the local DC. (see below for nested schema)
+                      Options for controlling behavior when no healthy nodes are available in the local DC.
+                    items:
+                      properties:
+                        datacenters:
+                          description: |-
+                            (List of String) Remote datacenters to return results from.
+                            Remote datacenters to return results from.
+                          items:
+                            type: string
+                          type: array
+                        nearestN:
+                          description: |-
+                            (Number) Return results from this many datacenters, sorted in ascending order of estimated RTT.
+                            Return results from this many datacenters, sorted in ascending order of estimated RTT.
+                          type: number
+                        targets:
+                          description: |-
+                            (Block List) Specifies a sequential list of remote datacenters and cluster peers to failover to if there are no healthy service instances in the local datacenter. This option cannot be used with nearest_n or datacenters. (see below for nested schema)
+                            Specifies a sequential list of remote datacenters and cluster peers to failover to if there are no healthy service instances in the local datacenter. This option cannot be used with `nearest_n` or `datacenters`.
+                          items:
+                            properties:
+                              datacenter:
+                                description: |-
+                                  (String) The datacenter to use. This overrides the agent's default datacenter and the datacenter in the provider setup.
+                                  Specifies a WAN federated datacenter to forward the query to.
+                                type: string
+                              peer:
+                                description: |-
+                                  (String) Specifies a cluster peer to use for failover.
+                                  Specifies a cluster peer to use for failover.
+                                type: string
+                            type: object
+                          type: array
+                      type: object
+                    type: array
+                  ignoreCheckIds:
+                    description: |-
+                      defined queries can be simpler than de-registering the check as an interim solution until the check can be fixed.
+                      Specifies a list of check IDs that should be ignored when filtering unhealthy instances. This is mostly useful in an emergency or as a temporary measure when a health check is found to be unreliable. Being able to ignore it in centrally-defined queries can be simpler than de-registering the check as an interim solution until the check can be fixed.
+                    items:
+                      type: string
+                    type: array
+                  name:
+                    description: |-
+                      all.
+                      The name of the prepared query. Used to identify the prepared query during requests. Can be specified as an empty string to configure the query as a catch-all.
+                    type: string
+                  near:
+                    description: |-
+                      (String) Allows specifying the name of a node to sort results near using Consul's distance sorting and network coordinates. The magic _agent value can be used to always sort nearest the node servicing the request.
+                      Allows specifying the name of a node to sort results near using Consul's distance sorting and network coordinates. The magic `_agent` value can be used to always sort nearest the node servicing the request.
+                    type: string
+                  nodeMeta:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      defined key/value pairs that will be used for filtering the query results to nodes with the given metadata values present.
+                      Specifies a list of user-defined key/value pairs that will be used for filtering the query results to nodes with the given metadata values present.
+                    type: object
+                    x-kubernetes-map-type: granular
+                  onlyPassing:
+                    description: |-
+                      (Boolean) When true, the prepared query will only return nodes with passing health checks in the result.
+                      When `true`, the prepared query will only return nodes with passing health checks in the result.
+                    type: boolean
+                  service:
+                    description: |-
+                      (String) The name of the service to query
+                      The name of the service to query
+                    type: string
+                  serviceMeta:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      defined key/value pairs that will be used for filtering the query results to services with the given metadata values present.
+                      Specifies a list of user-defined key/value pairs that will be used for filtering the query results to services with the given metadata values present.
+                    type: object
+                    x-kubernetes-map-type: granular
+                  session:
+                    description: |-
+                      (String) The name of the Consul session to tie this query's lifetime to.  This is an advanced parameter that should not be used without a complete understanding of Consul sessions and the implications of their use (it is recommended to leave this blank in nearly all cases).  If this parameter is omitted the query will not expire.
+                      The name of the Consul session to tie this query's lifetime to.  This is an advanced parameter that should not be used without a complete understanding of Consul sessions and the implications of their use (it is recommended to leave this blank in nearly all cases).  If this parameter is omitted the query will not expire.
+                    type: string
+                  storedToken:
+                    description: |-
+                      (String) The ACL token to store with the prepared query. This token will be used by default whenever the query is executed.
+                      The ACL token to store with the prepared query. This token will be used by default whenever the query is executed.
+                    type: string
+                  tags:
+                    description: |-
+                      (Set of String) The list of required and/or disallowed tags.  If a tag is in this list it must be present.  If the tag is preceded with a "!" then it is disallowed.
+                      The list of required and/or disallowed tags.  If a tag is in this list it must be present.  If the tag is preceded with a "!" then it is disallowed.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  template:
+                    description: |-
+                      (Block List, Max: 1) Query templating options. This is used to make a single prepared query respond to many different requests (see below for nested schema)
+                      Query templating options. This is used to make a single prepared query respond to many different requests
+                    items:
+                      properties:
+                        regexp:
+                          description: |-
+                            (String) The regular expression to match with. When using name_prefix_match, this regex is applied against the query name.
+                            The regular expression to match with. When using `name_prefix_match`, this regex is applied against the query name.
+                          type: string
+                        removeEmptyTags:
+                          description: |-
+                            (Boolean) If set to true, will cause the tags list inside the service structure to be stripped of any empty strings.
+                            If set to true, will cause the tags list inside the service structure to be stripped of any empty strings.
+                          type: boolean
+                        type:
+                          description: |-
+                            (String) The type of template matching to perform. Currently only name_prefix_match is supported.
+                            The type of template matching to perform. Currently only `name_prefix_match` is supported.
+                          type: string
+                      type: object
+                    type: array
+                  tokenSecretRef:
+                    description: |-
+                      (String, Sensitive, Deprecated) The ACL token to use when saving the prepared query. This overrides the token that the agent provides by default.
+                      The ACL token to use when saving the prepared query. This overrides the token that the agent provides by default.
+                    properties:
+                      key:
+                        description: The key to select.
+                        type: string
+                      name:
+                        description: Name of the secret.
+                        type: string
+                      namespace:
+                        description: Namespace of the secret.
+                        type: string
+                    required:
+                    - key
+                    - name
+                    - namespace
+                    type: object
+                type: object
+              initProvider:
+                description: |-
+                  THIS IS A BETA FIELD. It will be honored
+                  unless the Management Policies feature flag is disabled.
+                  InitProvider holds the same fields as ForProvider, with the exception
+                  of Identifier and other resource reference fields. The fields that are
+                  in InitProvider are merged into ForProvider when the resource is created.
+                  The same fields are also added to the terraform ignore_changes hook, to
+                  avoid updating them after creation. This is useful for fields that are
+                  required on creation, but we do not desire to update them after creation,
+                  for example because of an external controller is managing them, like an
+                  autoscaler.
+                properties:
+                  connect:
+                    description: |-
+                      (Boolean) When true the prepared query will return connect proxy services for a queried service.  Conditions such as tags in the prepared query will be matched against the proxy service. Defaults to false.
+                      When `true` the prepared query will return connect proxy services for a queried service.  Conditions such as `tags` in the prepared query will be matched against the proxy service. Defaults to false.
+                    type: boolean
+                  datacenter:
+                    description: |-
+                      (String) The datacenter to use. This overrides the agent's default datacenter and the datacenter in the provider setup.
+                      The datacenter to use. This overrides the agent's default datacenter and the datacenter in the provider setup.
+                    type: string
+                  dns:
+                    description: |-
+                      (Block List, Max: 1) Settings for controlling the DNS response details. (see below for nested schema)
+                      Settings for controlling the DNS response details.
+                    items:
+                      properties:
+                        ttl:
+                          description: |-
+                            (String) The TTL to send when returning DNS results.
+                            The TTL to send when returning DNS results.
+                          type: string
+                      type: object
+                    type: array
+                  failover:
+                    description: |-
+                      (Block List, Max: 1) Options for controlling behavior when no healthy nodes are available in the local DC. (see below for nested schema)
+                      Options for controlling behavior when no healthy nodes are available in the local DC.
+                    items:
+                      properties:
+                        datacenters:
+                          description: |-
+                            (List of String) Remote datacenters to return results from.
+                            Remote datacenters to return results from.
+                          items:
+                            type: string
+                          type: array
+                        nearestN:
+                          description: |-
+                            (Number) Return results from this many datacenters, sorted in ascending order of estimated RTT.
+                            Return results from this many datacenters, sorted in ascending order of estimated RTT.
+                          type: number
+                        targets:
+                          description: |-
+                            (Block List) Specifies a sequential list of remote datacenters and cluster peers to failover to if there are no healthy service instances in the local datacenter. This option cannot be used with nearest_n or datacenters. (see below for nested schema)
+                            Specifies a sequential list of remote datacenters and cluster peers to failover to if there are no healthy service instances in the local datacenter. This option cannot be used with `nearest_n` or `datacenters`.
+                          items:
+                            properties:
+                              datacenter:
+                                description: |-
+                                  (String) The datacenter to use. This overrides the agent's default datacenter and the datacenter in the provider setup.
+                                  Specifies a WAN federated datacenter to forward the query to.
+                                type: string
+                              peer:
+                                description: |-
+                                  (String) Specifies a cluster peer to use for failover.
+                                  Specifies a cluster peer to use for failover.
+                                type: string
+                            type: object
+                          type: array
+                      type: object
+                    type: array
+                  ignoreCheckIds:
+                    description: |-
+                      defined queries can be simpler than de-registering the check as an interim solution until the check can be fixed.
+                      Specifies a list of check IDs that should be ignored when filtering unhealthy instances. This is mostly useful in an emergency or as a temporary measure when a health check is found to be unreliable. Being able to ignore it in centrally-defined queries can be simpler than de-registering the check as an interim solution until the check can be fixed.
+                    items:
+                      type: string
+                    type: array
+                  name:
+                    description: |-
+                      all.
+                      The name of the prepared query. Used to identify the prepared query during requests. Can be specified as an empty string to configure the query as a catch-all.
+                    type: string
+                  near:
+                    description: |-
+                      (String) Allows specifying the name of a node to sort results near using Consul's distance sorting and network coordinates. The magic _agent value can be used to always sort nearest the node servicing the request.
+                      Allows specifying the name of a node to sort results near using Consul's distance sorting and network coordinates. The magic `_agent` value can be used to always sort nearest the node servicing the request.
+                    type: string
+                  nodeMeta:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      defined key/value pairs that will be used for filtering the query results to nodes with the given metadata values present.
+                      Specifies a list of user-defined key/value pairs that will be used for filtering the query results to nodes with the given metadata values present.
+                    type: object
+                    x-kubernetes-map-type: granular
+                  onlyPassing:
+                    description: |-
+                      (Boolean) When true, the prepared query will only return nodes with passing health checks in the result.
+                      When `true`, the prepared query will only return nodes with passing health checks in the result.
+                    type: boolean
+                  service:
+                    description: |-
+                      (String) The name of the service to query
+                      The name of the service to query
+                    type: string
+                  serviceMeta:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      defined key/value pairs that will be used for filtering the query results to services with the given metadata values present.
+                      Specifies a list of user-defined key/value pairs that will be used for filtering the query results to services with the given metadata values present.
+                    type: object
+                    x-kubernetes-map-type: granular
+                  session:
+                    description: |-
+                      (String) The name of the Consul session to tie this query's lifetime to.  This is an advanced parameter that should not be used without a complete understanding of Consul sessions and the implications of their use (it is recommended to leave this blank in nearly all cases).  If this parameter is omitted the query will not expire.
+                      The name of the Consul session to tie this query's lifetime to.  This is an advanced parameter that should not be used without a complete understanding of Consul sessions and the implications of their use (it is recommended to leave this blank in nearly all cases).  If this parameter is omitted the query will not expire.
+                    type: string
+                  storedToken:
+                    description: |-
+                      (String) The ACL token to store with the prepared query. This token will be used by default whenever the query is executed.
+                      The ACL token to store with the prepared query. This token will be used by default whenever the query is executed.
+                    type: string
+                  tags:
+                    description: |-
+                      (Set of String) The list of required and/or disallowed tags.  If a tag is in this list it must be present.  If the tag is preceded with a "!" then it is disallowed.
+                      The list of required and/or disallowed tags.  If a tag is in this list it must be present.  If the tag is preceded with a "!" then it is disallowed.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  template:
+                    description: |-
+                      (Block List, Max: 1) Query templating options. This is used to make a single prepared query respond to many different requests (see below for nested schema)
+                      Query templating options. This is used to make a single prepared query respond to many different requests
+                    items:
+                      properties:
+                        regexp:
+                          description: |-
+                            (String) The regular expression to match with. When using name_prefix_match, this regex is applied against the query name.
+                            The regular expression to match with. When using `name_prefix_match`, this regex is applied against the query name.
+                          type: string
+                        removeEmptyTags:
+                          description: |-
+                            (Boolean) If set to true, will cause the tags list inside the service structure to be stripped of any empty strings.
+                            If set to true, will cause the tags list inside the service structure to be stripped of any empty strings.
+                          type: boolean
+                        type:
+                          description: |-
+                            (String) The type of template matching to perform. Currently only name_prefix_match is supported.
+                            The type of template matching to perform. Currently only `name_prefix_match` is supported.
+                          type: string
+                      type: object
+                    type: array
+                  tokenSecretRef:
+                    description: |-
+                      (String, Sensitive, Deprecated) The ACL token to use when saving the prepared query. This overrides the token that the agent provides by default.
+                      The ACL token to use when saving the prepared query. This overrides the token that the agent provides by default.
+                    properties:
+                      key:
+                        description: The key to select.
+                        type: string
+                      name:
+                        description: Name of the secret.
+                        type: string
+                      namespace:
+                        description: Namespace of the secret.
+                        type: string
+                    required:
+                    - key
+                    - name
+                    - namespace
+                    type: object
+                type: object
+              managementPolicies:
+                default:
+                - '*'
+                description: |-
+                  THIS IS A BETA FIELD. It is on by default but can be opted out
+                  through a Crossplane feature flag.
+                  ManagementPolicies specify the array of actions Crossplane is allowed to
+                  take on the managed and external resources.
+                  This field is planned to replace the DeletionPolicy field in a future
+                  release. Currently, both could be set independently and non-default
+                  values would be honored if the feature flag is enabled. If both are
+                  custom, the DeletionPolicy field will be ignored.
+                  See the design doc for more information: https://github.com/crossplane/crossplane/blob/499895a25d1a1a0ba1604944ef98ac7a1a71f197/design/design-doc-observe-only-resources.md?plain=1#L223
+                  and this one: https://github.com/crossplane/crossplane/blob/444267e84783136daa93568b364a5f01228cacbe/design/one-pager-ignore-changes.md
+                items:
+                  description: |-
+                    A ManagementAction represents an action that the Crossplane controllers
+                    can take on an external resource.
+                  enum:
+                  - Observe
+                  - Create
+                  - Update
+                  - Delete
+                  - LateInitialize
+                  - '*'
+                  type: string
+                type: array
+              providerConfigRef:
+                default:
+                  name: default
+                description: |-
+                  ProviderConfigReference specifies how the provider that will be used to
+                  create, observe, update, and delete this managed resource should be
+                  configured.
+                properties:
+                  name:
+                    description: Name of the referenced object.
+                    type: string
+                  policy:
+                    description: Policies for referencing.
+                    properties:
+                      resolution:
+                        default: Required
+                        description: |-
+                          Resolution specifies whether resolution of this reference is required.
+                          The default is 'Required', which means the reconcile will fail if the
+                          reference cannot be resolved. 'Optional' means this reference will be
+                          a no-op if it cannot be resolved.
+                        enum:
+                        - Required
+                        - Optional
+                        type: string
+                      resolve:
+                        description: |-
+                          Resolve specifies when this reference should be resolved. The default
+                          is 'IfNotPresent', which will attempt to resolve the reference only when
+                          the corresponding field is not present. Use 'Always' to resolve the
+                          reference on every reconcile.
+                        enum:
+                        - Always
+                        - IfNotPresent
+                        type: string
+                    type: object
+                required:
+                - name
+                type: object
+              publishConnectionDetailsTo:
+                description: |-
+                  PublishConnectionDetailsTo specifies the connection secret config which
+                  contains a name, metadata and a reference to secret store config to
+                  which any connection details for this managed resource should be written.
+                  Connection details frequently include the endpoint, username,
+                  and password required to connect to the managed resource.
+                properties:
+                  configRef:
+                    default:
+                      name: default
+                    description: |-
+                      SecretStoreConfigRef specifies which secret store config should be used
+                      for this ConnectionSecret.
+                    properties:
+                      name:
+                        description: Name of the referenced object.
+                        type: string
+                      policy:
+                        description: Policies for referencing.
+                        properties:
+                          resolution:
+                            default: Required
+                            description: |-
+                              Resolution specifies whether resolution of this reference is required.
+                              The default is 'Required', which means the reconcile will fail if the
+                              reference cannot be resolved. 'Optional' means this reference will be
+                              a no-op if it cannot be resolved.
+                            enum:
+                            - Required
+                            - Optional
+                            type: string
+                          resolve:
+                            description: |-
+                              Resolve specifies when this reference should be resolved. The default
+                              is 'IfNotPresent', which will attempt to resolve the reference only when
+                              the corresponding field is not present. Use 'Always' to resolve the
+                              reference on every reconcile.
+                            enum:
+                            - Always
+                            - IfNotPresent
+                            type: string
+                        type: object
+                    required:
+                    - name
+                    type: object
+                  metadata:
+                    description: Metadata is the metadata for connection secret.
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          Annotations are the annotations to be added to connection secret.
+                          - For Kubernetes secrets, this will be used as "metadata.annotations".
+                          - It is up to Secret Store implementation for others store types.
+                        type: object
+                      labels:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          Labels are the labels/tags to be added to connection secret.
+                          - For Kubernetes secrets, this will be used as "metadata.labels".
+                          - It is up to Secret Store implementation for others store types.
+                        type: object
+                      type:
+                        description: |-
+                          Type is the SecretType for the connection secret.
+                          - Only valid for Kubernetes Secret Stores.
+                        type: string
+                    type: object
+                  name:
+                    description: Name is the name of the connection secret.
+                    type: string
+                required:
+                - name
+                type: object
+              writeConnectionSecretToRef:
+                description: |-
+                  WriteConnectionSecretToReference specifies the namespace and name of a
+                  Secret to which any connection details for this managed resource should
+                  be written. Connection details frequently include the endpoint, username,
+                  and password required to connect to the managed resource.
+                  This field is planned to be replaced in a future release in favor of
+                  PublishConnectionDetailsTo. Currently, both could be set independently
+                  and connection details would be published to both without affecting
+                  each other.
+                properties:
+                  name:
+                    description: Name of the secret.
+                    type: string
+                  namespace:
+                    description: Namespace of the secret.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+            required:
+            - forProvider
+            type: object
+            x-kubernetes-validations:
+            - message: spec.forProvider.name is a required parameter
+              rule: '!(''*'' in self.managementPolicies || ''Create'' in self.managementPolicies
+                || ''Update'' in self.managementPolicies) || has(self.forProvider.name)
+                || (has(self.initProvider) && has(self.initProvider.name))'
+            - message: spec.forProvider.service is a required parameter
+              rule: '!(''*'' in self.managementPolicies || ''Create'' in self.managementPolicies
+                || ''Update'' in self.managementPolicies) || has(self.forProvider.service)
+                || (has(self.initProvider) && has(self.initProvider.service))'
+          status:
+            description: QueryStatus defines the observed state of Query.
+            properties:
+              atProvider:
+                properties:
+                  connect:
+                    description: |-
+                      (Boolean) When true the prepared query will return connect proxy services for a queried service.  Conditions such as tags in the prepared query will be matched against the proxy service. Defaults to false.
+                      When `true` the prepared query will return connect proxy services for a queried service.  Conditions such as `tags` in the prepared query will be matched against the proxy service. Defaults to false.
+                    type: boolean
+                  datacenter:
+                    description: |-
+                      (String) The datacenter to use. This overrides the agent's default datacenter and the datacenter in the provider setup.
+                      The datacenter to use. This overrides the agent's default datacenter and the datacenter in the provider setup.
+                    type: string
+                  dns:
+                    description: |-
+                      (Block List, Max: 1) Settings for controlling the DNS response details. (see below for nested schema)
+                      Settings for controlling the DNS response details.
+                    items:
+                      properties:
+                        ttl:
+                          description: |-
+                            (String) The TTL to send when returning DNS results.
+                            The TTL to send when returning DNS results.
+                          type: string
+                      type: object
+                    type: array
+                  failover:
+                    description: |-
+                      (Block List, Max: 1) Options for controlling behavior when no healthy nodes are available in the local DC. (see below for nested schema)
+                      Options for controlling behavior when no healthy nodes are available in the local DC.
+                    items:
+                      properties:
+                        datacenters:
+                          description: |-
+                            (List of String) Remote datacenters to return results from.
+                            Remote datacenters to return results from.
+                          items:
+                            type: string
+                          type: array
+                        nearestN:
+                          description: |-
+                            (Number) Return results from this many datacenters, sorted in ascending order of estimated RTT.
+                            Return results from this many datacenters, sorted in ascending order of estimated RTT.
+                          type: number
+                        targets:
+                          description: |-
+                            (Block List) Specifies a sequential list of remote datacenters and cluster peers to failover to if there are no healthy service instances in the local datacenter. This option cannot be used with nearest_n or datacenters. (see below for nested schema)
+                            Specifies a sequential list of remote datacenters and cluster peers to failover to if there are no healthy service instances in the local datacenter. This option cannot be used with `nearest_n` or `datacenters`.
+                          items:
+                            properties:
+                              datacenter:
+                                description: |-
+                                  (String) The datacenter to use. This overrides the agent's default datacenter and the datacenter in the provider setup.
+                                  Specifies a WAN federated datacenter to forward the query to.
+                                type: string
+                              peer:
+                                description: |-
+                                  (String) Specifies a cluster peer to use for failover.
+                                  Specifies a cluster peer to use for failover.
+                                type: string
+                            type: object
+                          type: array
+                      type: object
+                    type: array
+                  id:
+                    description: (String) The ID of this resource.
+                    type: string
+                  ignoreCheckIds:
+                    description: |-
+                      defined queries can be simpler than de-registering the check as an interim solution until the check can be fixed.
+                      Specifies a list of check IDs that should be ignored when filtering unhealthy instances. This is mostly useful in an emergency or as a temporary measure when a health check is found to be unreliable. Being able to ignore it in centrally-defined queries can be simpler than de-registering the check as an interim solution until the check can be fixed.
+                    items:
+                      type: string
+                    type: array
+                  name:
+                    description: |-
+                      all.
+                      The name of the prepared query. Used to identify the prepared query during requests. Can be specified as an empty string to configure the query as a catch-all.
+                    type: string
+                  near:
+                    description: |-
+                      (String) Allows specifying the name of a node to sort results near using Consul's distance sorting and network coordinates. The magic _agent value can be used to always sort nearest the node servicing the request.
+                      Allows specifying the name of a node to sort results near using Consul's distance sorting and network coordinates. The magic `_agent` value can be used to always sort nearest the node servicing the request.
+                    type: string
+                  nodeMeta:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      defined key/value pairs that will be used for filtering the query results to nodes with the given metadata values present.
+                      Specifies a list of user-defined key/value pairs that will be used for filtering the query results to nodes with the given metadata values present.
+                    type: object
+                    x-kubernetes-map-type: granular
+                  onlyPassing:
+                    description: |-
+                      (Boolean) When true, the prepared query will only return nodes with passing health checks in the result.
+                      When `true`, the prepared query will only return nodes with passing health checks in the result.
+                    type: boolean
+                  service:
+                    description: |-
+                      (String) The name of the service to query
+                      The name of the service to query
+                    type: string
+                  serviceMeta:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      defined key/value pairs that will be used for filtering the query results to services with the given metadata values present.
+                      Specifies a list of user-defined key/value pairs that will be used for filtering the query results to services with the given metadata values present.
+                    type: object
+                    x-kubernetes-map-type: granular
+                  session:
+                    description: |-
+                      (String) The name of the Consul session to tie this query's lifetime to.  This is an advanced parameter that should not be used without a complete understanding of Consul sessions and the implications of their use (it is recommended to leave this blank in nearly all cases).  If this parameter is omitted the query will not expire.
+                      The name of the Consul session to tie this query's lifetime to.  This is an advanced parameter that should not be used without a complete understanding of Consul sessions and the implications of their use (it is recommended to leave this blank in nearly all cases).  If this parameter is omitted the query will not expire.
+                    type: string
+                  storedToken:
+                    description: |-
+                      (String) The ACL token to store with the prepared query. This token will be used by default whenever the query is executed.
+                      The ACL token to store with the prepared query. This token will be used by default whenever the query is executed.
+                    type: string
+                  tags:
+                    description: |-
+                      (Set of String) The list of required and/or disallowed tags.  If a tag is in this list it must be present.  If the tag is preceded with a "!" then it is disallowed.
+                      The list of required and/or disallowed tags.  If a tag is in this list it must be present.  If the tag is preceded with a "!" then it is disallowed.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  template:
+                    description: |-
+                      (Block List, Max: 1) Query templating options. This is used to make a single prepared query respond to many different requests (see below for nested schema)
+                      Query templating options. This is used to make a single prepared query respond to many different requests
+                    items:
+                      properties:
+                        regexp:
+                          description: |-
+                            (String) The regular expression to match with. When using name_prefix_match, this regex is applied against the query name.
+                            The regular expression to match with. When using `name_prefix_match`, this regex is applied against the query name.
+                          type: string
+                        removeEmptyTags:
+                          description: |-
+                            (Boolean) If set to true, will cause the tags list inside the service structure to be stripped of any empty strings.
+                            If set to true, will cause the tags list inside the service structure to be stripped of any empty strings.
+                          type: boolean
+                        type:
+                          description: |-
+                            (String) The type of template matching to perform. Currently only name_prefix_match is supported.
+                            The type of template matching to perform. Currently only `name_prefix_match` is supported.
+                          type: string
+                      type: object
+                    type: array
+                type: object
+              conditions:
+                description: Conditions of the resource.
+                items:
+                  description: A Condition that may apply to a resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        LastTransitionTime is the last time this condition transitioned from one
+                        status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        A Message containing details about this condition's last transition from
+                        one status to another, if any.
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        ObservedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      type: integer
+                    reason:
+                      description: A Reason for this condition's last transition from
+                        one status to another.
+                      type: string
+                    status:
+                      description: Status of this condition; is it currently True,
+                        False, or Unknown?
+                      type: string
+                    type:
+                      description: |-
+                        Type of this condition. At most one of each condition type may apply to
+                        a resource at any point in time.
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              observedGeneration:
+                description: |-
+                  ObservedGeneration is the latest metadata.generation
+                  which resulted in either a ready state, or stalled due to error
+                  it can not recover from without human intervention.
+                format: int64
+                type: integer
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

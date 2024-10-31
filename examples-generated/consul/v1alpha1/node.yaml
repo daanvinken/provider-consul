@@ -1,0 +1,12 @@
+apiVersion: consul.daanvinken.io/v1alpha1
+kind: Node
+metadata:
+  annotations:
+    meta.upbound.io/example-id: consul/v1alpha1/node
+  labels:
+    testing.upbound.io/example-name: foobar
+  name: foobar
+spec:
+  forProvider:
+    address: 192.168.10.10
+    name: foobar
