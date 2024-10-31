@@ -10,6 +10,7 @@ import "github.com/crossplane/upjet/pkg/config"
 // provider.
 var ExternalNameConfigs = map[string]config.ExternalName{
 	// Import requires using a randomly generated ID from provider: nl-2e21sda
+	//TODO (daanvinken) Fix external names; TemplatedStringAsIdentifier("", "crossplane-managed:{{ .external_name }}:{{ .parameters.id }}")
 	"consul_acl_role":   config.IdentifierFromProvider,
 	"consul_acl_policy": config.IdentifierFromProvider,
 	"consul_acl_token":  config.IdentifierFromProvider}
