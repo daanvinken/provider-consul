@@ -1,0 +1,7 @@
+apiVersion: daanvinken.io/v1
+kind: ConsulServiceACL
+metadata:
+  name: acr-main
+spec:
+  parameters:
+    main_keys: true

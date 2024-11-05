@@ -4,7 +4,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.14.0
-  name: preparedqueries.prepared.daanvinken.io
+  name: queries.prepared.daanvinken.io
 spec:
   group: prepared.daanvinken.io
   names:
@@ -12,10 +12,10 @@ spec:
     - crossplane
     - managed
     - consul
-    kind: PreparedQuery
-    listKind: PreparedQueryList
-    plural: preparedqueries
-    singular: preparedquery
+    kind: Query
+    listKind: QueryList
+    plural: queries
+    singular: query
   scope: Cluster
   versions:
   - additionalPrinterColumns:

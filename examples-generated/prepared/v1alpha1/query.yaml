@@ -1,5 +1,5 @@
 apiVersion: prepared.daanvinken.io/v1alpha1
-kind: PreparedQuery
+kind: Query
 metadata:
   annotations:
     meta.upbound.io/example-id: prepared/v1alpha1/query
@@ -8,14 +8,16 @@ metadata:
   name: myapp-query
 spec:
   forProvider:
-    datacenter: dc1
+    datacenter: us-central1
     dns:
     - ttl: 30s
     failover:
     - datacenters:
-      - dc1
+      - us-west1
+      - us-east-2
+      - asia-east1
       nearestN: 3
-    name: myapp
+    name: myquery
     near: _agent
     onlyPassing: true
     service: myapp

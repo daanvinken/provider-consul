@@ -7,7 +7,7 @@ func Configure(p *config.Provider) {
 	p.AddResourceConfigurator("acl_token", func(r *config.Resource) {
 		r.ShortGroup = "acl_token"
 		r.References["policy"] = config.Reference{
-			Type: "github.com/daanvinken/provider-consul/apis/policy/v1alpha1/v1alpha1.policy",
+			TerraformName: "acl_policy",
 		}
 	})
 }

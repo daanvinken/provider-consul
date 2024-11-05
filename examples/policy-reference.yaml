@@ -3,15 +3,13 @@ kind: Token
 metadata:
   annotations:
     meta.upbound.io/example-id: acl/v1alpha1/token
-  labels:
-    testing.upbound.io/example-name: test
-  name: test
+  name: node-token
 spec:
   forProvider:
     description: my test token
     local: true
     policies:
-    - agent
+      - agent
 ---
 apiVersion: acl.daanvinken.io/v1alpha1
 kind: Policy
@@ -42,6 +40,6 @@ spec:
     description: bar
     name: foo
     policies:
-      - ${consul_acl_policy.read-policy.id}
+      - agent
     serviceIdentities:
       - serviceName: foo
