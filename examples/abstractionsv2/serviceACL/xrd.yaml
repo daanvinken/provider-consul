@@ -1,0 +1,38 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: consulserviceacls.daanvinken.io
+spec:
+  group: daanvinken.io
+  names:
+    kind: ConsulServiceACL
+    plural: consulserviceacls
+    shortNames:
+      - csa
+  claimNames:
+    kind: ConsulServiceACL
+    plural: consulserviceacls
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                parameters:
+                  type: object
+                  properties:
+                    consul_backend_path:
+                      type: string
+                      description: "Backend path for the Consul secrets in Vault."
+                    dc:
+                      type: string
+                      description: "Data center name for the Consul ACL."
+                  required:
+                    - consul_backend_path
+                    - dc
+

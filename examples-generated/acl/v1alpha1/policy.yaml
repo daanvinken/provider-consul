@@ -12,6 +12,6 @@ spec:
     - dc1
     name: my_policy
     rules: |
-      node_prefix "" {
-        policy = "read"
-      }
+        node_prefix "" {
+          policy = "read"
+        }

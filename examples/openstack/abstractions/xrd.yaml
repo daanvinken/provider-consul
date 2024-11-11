@@ -1,0 +1,63 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: adyencomputes.daanvinken.io
+spec:
+  group: daanvinken.io
+  names:
+    kind: AdyenCompute
+    plural: adyencomputes
+  claimNames:
+    kind: AdyenCompute
+    plural: adyencomputes
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                parameters:
+                  type: object
+                  properties:
+                    computeInstanceName:
+                      type: string
+                      description: "Name of the compute instance"
+                    imageName:
+                      type: string
+                      description: "Name of the image to use for the instance"
+                    flavorName:
+                      type: string
+                      description: "Flavor of the compute instance"
+                    network:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                      description: "List of network configurations with name field"
+                    securityGroups:
+                      type: array
+                      items:
+                        type: string
+                      description: "List of security groups for the instance"
+                    consulServices:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          serviceName:
+                            type: string
+                            description: "Name of the service for ConsulServiceACL"
+                          main_keys:
+                            type: boolean
+                            description: "Flag to include main keys for the service in the ACL policy"
+                      description: "List of services to create ConsulServiceACL resources for each service"
+                    providerConfigName:
+                      type: string
+                      description: "Full provider config name for the compute instance (e.g., openstack-<dc>-<env>)"

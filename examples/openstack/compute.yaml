@@ -1,0 +1,16 @@
+---
+apiVersion: compute.openstack.crossplane.io/v1alpha1
+kind: InstanceV2
+metadata:
+  name: crossplane-instance-daanvi
+spec:
+  forProvider:
+    name: crossplane-instance-daanvi
+    imageName: cirros
+    flavorName: 1C-500M-1G-STG1-CIRROS
+    network:
+      - name: osstg1test
+    securityGroups:
+      - default
+  providerConfigRef:
+    name: openstack-ams2-nonprod

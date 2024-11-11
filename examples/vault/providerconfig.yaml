@@ -1,0 +1,13 @@
+apiVersion: vault.upbound.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: default
+spec:
+  address: "http://vault.vault.svc.cluster.local:8200"  # Vault server URL
+  credentials:
+    source: Secret
+    secretRef:
+      name: example-vault-creds      # Name of the secret storing the Vault token
+      namespace: crossplane-system   # Namespace where the secret is located
+      key: credentials
+  skip_tls_verify: true              # Set to true only for non-production environments

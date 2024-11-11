@@ -1,0 +1,8 @@
+apiVersion: daanvinken.io/v1alpha1
+kind: ConsulServiceACL
+metadata:
+  name: acr-main
+spec:
+  parameters:
+    consul_backend_path: "consul"
+    dc: "AMS3"

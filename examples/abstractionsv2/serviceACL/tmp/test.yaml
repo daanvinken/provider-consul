@@ -1,0 +1,53 @@
+apiVersion: acl.daanvinken.io/v1alpha1
+kind: Policy
+metadata:
+  name: policy-my-service
+spec:
+  forProvider:
+    name: "policy-my-service"  # Unique policy name
+    datacenters:
+      - "AMS2"                 # Specify the data center
+    rules: |
+      agent_prefix "" {
+        policy = "read"
+      }
+
+      service_prefix "" {
+        policy = "read"
+      }
+
+      service_prefix "my-service" {
+        policy = "write"
+      }
+
+      key_prefix "my-service" {
+        policy = "write"
+      }
+
+      key_prefix "app/my-service" {
+        policy = "write"
+      }
+
+      session_prefix "" {
+        policy = "write"
+      }
+
+      session_prefix "session/my-service" {
+        policy = "write"
+      }
+
+      key_prefix "preloader/my-service" {
+        policy = "write"
+      }
+---
+apiVersion: consul.vault.upbound.io/v1alpha1
+kind: SecretBackendRole
+metadata:
+  name: example-consul-backend-role
+spec:
+  forProvider:
+    backend: "consul"  # The backend path for Consul secrets in Vault
+    name: "service_ref_my-service"      # Unique name for the backend role, typically linked to a specific service
+    policies:
+      - "policy-my-service"             # Consul ACL policy to associate with this role
+

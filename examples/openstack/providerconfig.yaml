@@ -1,0 +1,11 @@
+apiVersion: openstack.crossplane.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: openstack-ams2-nonprod
+spec:
+  credentials:
+    secretRef:
+      key: config
+      name: provider-openstack-config
+      namespace: crossplane-system
+    source: Secret

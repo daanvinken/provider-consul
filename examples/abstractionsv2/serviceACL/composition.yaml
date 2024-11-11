@@ -1,0 +1,192 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: consulserviceacl.composite.daanvinken
+spec:
+  compositeTypeRef:
+    apiVersion: daanvinken.io/v1alpha1
+    kind: ConsulServiceACL
+  resources:
+    # Consul ACL Policy Resource
+    - name: consul_acl_policy
+      base:
+        apiVersion: acl.daanvinken.io/v1alpha1
+        kind: Policy
+        metadata:
+          generateName: "policy-"
+          labels:
+            crossplane.io/composite: "consulserviceacl"
+        spec:
+          forProvider:
+            datacenters:
+              - ""  # Patch dynamically
+            rules: ""  # Inject full policy dynamically
+      patches:
+        - fromFieldPath: "spec.parameters.dc"
+          toFieldPath: "spec.forProvider.datacenters[0]"
+        - fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.name"
+          transforms:
+            - type: string
+              string:
+                fmt: "policy-%s"
+        - fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.rules"
+          transforms:
+            - type: string
+              string:
+                fmt: |
+                  agent_prefix "" {
+                    policy = "read"
+                  }
+                  service_prefix "" {
+                    policy = "read"
+                  }
+                  service_prefix "%[1]s" {
+                    policy = "write"
+                  }
+                  key_prefix "%[1]s" {
+                    policy = "write"
+                  }
+                  key_prefix "app/%[1]s" {
+                    policy = "write"
+                  }
+                  session_prefix "" {
+                    policy = "write"
+                  }
+                  session_prefix "session/%[1]s" {
+                    policy = "write"
+                  }
+                  key_prefix "preloader/%[1]s" {
+                    policy = "write"
+                  }
+
+    # Vault Consul Secret Backend Role
+    - name: consul_secret_backend_role
+      base:
+        apiVersion: consul.vault.upbound.io/v1alpha1
+        kind: SecretBackendRole
+        metadata:
+          generateName: "backend-role-"
+        spec:
+          forProvider:
+            backend: ""  # Patch backend path dynamically
+            policies:
+              - "policy-placeholder"  # Reference policy dynamically
+      patches:
+        - fromFieldPath: "spec.parameters.consul_backend_path"
+          toFieldPath: "spec.forProvider.backend"
+        - fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.name"
+          transforms:
+            - type: string
+              string:
+                fmt: "service_ref_%[1]s"
+        - fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.policies[0]"
+          transforms:
+            - type: string
+              string:
+                fmt: "policy-%[1]s"
+
+    # Consul ACL Role Resource
+    - name: consul_acl_role
+      base:
+        apiVersion: acl.daanvinken.io/v1alpha1
+        kind: Role
+        metadata:
+          generateName: "role-"
+        spec:
+          forProvider:
+            description: "ACL Role for service"
+            serviceIdentities:
+              - serviceName: "foo"
+      patches:
+        - fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.name"
+          transforms:
+            - type: string
+              string:
+                fmt: "role-%[1]s"
+        - fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.policies[0]"
+          transforms:
+            - type: string
+              string:
+                fmt: "policy-%[1]s"
+
+    # Vault Policy Resource
+    - name: vault_policy
+      base:
+        apiVersion: vault.vault.upbound.io/v1alpha1
+        kind: Policy
+        metadata:
+          generateName: "vault-policy-"
+        spec:
+          forProvider:
+            name: ""  # Patch dynamically
+            policy: ""  # Inject full policy dynamically
+      patches:
+        - fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.name"
+          transforms:
+            - type: string
+              string:
+                fmt: "policy_consul_service_ref_%[1]s"
+        - fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.policy"
+          transforms:
+            - type: string
+              string:
+                fmt: |
+                  path "consul/creds/service_ref_%[1]s" {
+                    capabilities = ["read"]
+                  }
+
+                  path "secrets/creds/service_ref_%[1]s" {
+                    capabilities = ["read"]
+                  }
+
+                  path "secrets-kv2/data/service/%[1]s/*" {
+                    capabilities = ["read"]
+                  }
+
+                  path "something/v1/ica1/v1/issue/%[1]s" {
+                    capabilities = ["create", "update"]
+                  }
+
+                  path "containersinfra/v1/ica2/v1/issue/%[1]s" {
+                    capabilities = ["create", "update"]
+                  }
+
+                  path "transit/encrypt/something-main_%[1]s" {
+                    capabilities = ["update"]
+                  }
+
+                  path "transit/decrypt/something-main_%[1]s" {
+                    capabilities = ["update"]
+                  }
+
+    # Consul ACL Token Resource
+    - name: consul_acl_token
+      base:
+        apiVersion: acl.daanvinken.io/v1alpha1
+        kind: Token
+        metadata:
+          generateName: "token-"
+        spec:
+          forProvider:
+            description: "Generated by Crossplane"
+      patches:
+        - fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.name"
+          transforms:
+            - type: string
+              string:
+                fmt: "role-%[1]s"
+        - fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.policies[0]"
+          transforms:
+            - type: string
+              string:
+                fmt: "policy-%[1]s"

@@ -1,0 +1,76 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: adyencompute.composite.daanvinken
+spec:
+  compositeTypeRef:
+    apiVersion: daanvinken.io/v1alpha1
+    kind: AdyenCompute
+  resources:
+    # Compute Instance Resource
+    - name: instancev2
+      base:
+        apiVersion: compute.openstack.crossplane.io/v1alpha1
+        kind: InstanceV2
+        spec:
+          forProvider:
+            name: "crossplane-instance-placeholder"
+            imageName: "placeholder-image"
+            flavorName: "placeholder-flavor"
+            network: []
+            securityGroups: []
+          providerConfigRef:
+            name: "placeholder"
+      patches:
+        - fromFieldPath: "spec.parameters.computeInstanceName"
+          toFieldPath: "spec.forProvider.name"
+        - fromFieldPath: "spec.parameters.imageName"
+          toFieldPath: "spec.forProvider.imageName"
+        - fromFieldPath: "spec.parameters.flavorName"
+          toFieldPath: "spec.forProvider.flavorName"
+        - fromFieldPath: "spec.parameters.network"
+          toFieldPath: "spec.forProvider.network"
+        - fromFieldPath: "spec.parameters.securityGroups"
+          toFieldPath: "spec.forProvider.securityGroups"
+        - fromFieldPath: "spec.parameters.providerConfigName"
+          toFieldPath: "spec.providerConfigRef.name"
+
+    # ConsulServiceACL for the First Service
+    - name: consulserviceacl1
+      base:
+        apiVersion: daanvinken.io/v1
+        kind: ConsulServiceACL
+        spec:
+          parameters:
+            main_keys: false
+      patches:
+        - fromFieldPath: "spec.parameters.consulServices[0].serviceName"
+          toFieldPath: "metadata.name"   # Set name of the ConsulServiceACL
+          transforms:
+            - type: string
+              string:
+                fmt: "consulserviceacl-%s"
+        - fromFieldPath: "spec.parameters.consulServices[0].serviceName"
+          toFieldPath: "spec.parameters.service"
+        - fromFieldPath: "spec.parameters.consulServices[0].main_keys"
+          toFieldPath: "spec.parameters.main_keys"
+
+    # ConsulServiceACL for the Second Service
+    - name: consulserviceacl2
+      base:
+        apiVersion: daanvinken.io/v1
+        kind: ConsulServiceACL
+        spec:
+          parameters:
+            main_keys: false
+      patches:
+        - fromFieldPath: "spec.parameters.consulServices[1].serviceName"
+          toFieldPath: "metadata.name"   # Set name of the ConsulServiceACL
+          transforms:
+            - type: string
+              string:
+                fmt: "consulserviceacl-%s"
+        - fromFieldPath: "spec.parameters.consulServices[1].serviceName"
+          toFieldPath: "spec.parameters.service"
+        - fromFieldPath: "spec.parameters.consulServices[1].main_keys"
+          toFieldPath: "spec.parameters.main_keys"
