@@ -1,0 +1,182 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: consulagentacl.composite.daanvinken
+spec:
+  compositeTypeRef:
+    apiVersion: daanvinken.io/v1alpha1
+    kind: ConsulAgentACL
+  resources:
+    # Consul ACL Policy
+    - name: consul_acl_policy
+      base:
+        apiVersion: acl.daanvinken.io/v1alpha1
+        kind: Policy
+        metadata:
+          generateName: "policy-"
+        spec:
+          forProvider:
+            name: ""
+            rules: ""
+      patches:
+        - fromFieldPath: "spec.parameters.escaped_certname"
+          toFieldPath: "spec.forProvider.name"
+          transforms:
+            - type: string
+              string:
+                fmt: "acl_agent_%[1]s"
+        - fromFieldPath: "spec.parameters.realhostname"
+          toFieldPath: "spec.forProvider.rules"
+          transforms:
+            - type: string
+              string:
+                fmt: |
+                  node "%[1]s" {
+                    policy = "write"
+                  }
+                  agent "%[1]s" {
+                    policy = "write"
+                  }
+                  service "node-exporter" {
+                    policy = "write"
+                  }
+                  service_prefix "%[1]s" {
+                    policy = "write"
+                  }
+                  node_prefix "" {
+                    policy = "read"
+                  }
+                  session_prefix "" {
+                    policy = "write"
+                  }
+                  operator = "read"
+
+    # Consul ACL Role
+    - name: consul_acl_role
+      base:
+        apiVersion: acl.daanvinken.io/v1alpha1
+        kind: Role
+        metadata:
+          generateName: "role-"
+        spec:
+          forProvider:
+            description: "Consul agent role"
+            policies:
+              - ""
+      patches:
+        - fromFieldPath: "spec.parameters.escaped_certname"
+          toFieldPath: "spec.forProvider.name"
+          transforms:
+            - type: string
+              string:
+                fmt: "role_agent_%[1]s"
+        - fromFieldPath: "spec.parameters.escaped_certname"
+          toFieldPath: "spec.forProvider.policies[0]"
+          transforms:
+            - type: string
+              string:
+                fmt: "acl_agent_%[1]s"
+
+    # Consul ACL Token
+    - name: consul_acl_token
+      base:
+        apiVersion: acl.daanvinken.io/v1alpha1
+        kind: Token
+        patches:
+        metadata:
+          generateName: "token-"
+        spec:
+          forProvider:
+            description: "Consul agent token"
+            roles:
+              - ""
+      patches:
+        - type: ToCompositeFieldPath
+          fromFieldPath: "status.atProvider.accessorId"
+          toFieldPath: "spec.parameters.auth_accessor"
+        - fromFieldPath: "spec.parameters.escaped_certname"
+          toFieldPath: "spec.forProvider.roles[0]"
+          transforms:
+            - type: string
+              string:
+                fmt: "role_agent_%[1]s"
+
+    # Vault Cert Auth Backend Role
+    - name: vault_cert_auth_backend_role
+      base:
+        apiVersion: cert.vault.upbound.io/v1alpha1
+        kind: AuthBackendRole
+        metadata:
+          generateName: "cert-auth-role-"
+        spec:
+          forProvider:
+            name: ""
+            backend: "puppet"
+            certificate: |
+              -----BEGIN CERTIFICATE-----
+            allowed_common_names:
+              - ""
+            token_ttl: 86400
+            token_max_ttl: 86400
+            token_policies: []
+      patches:
+        - fromFieldPath: "spec.parameters.escaped_certname"
+          toFieldPath: "spec.forProvider.name"
+        - fromFieldPath: "spec.parameters.certname"
+          toFieldPath: "spec.forProvider.allowed_common_names[0]"
+        - fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.token_policies[0]"
+          transforms:
+            - type: string
+              string:
+                fmt: "policy_vault_agent_metadata_templated"
+        - fromFieldPath: "spec.parameters.role"
+          toFieldPath: "spec.forProvider.token_policies[1]"
+          transforms:
+            - type: string
+              string:
+                fmt: "policy_vault_agent_allow_child"
+
+    # Vault Identity Entity
+    - name: vault_identity_entity
+      base:
+        apiVersion: identity.vault.upbound.io/v1alpha1
+        kind: Entity
+        metadata:
+          generateName: "identity-entity-"
+        spec:
+          forProvider:
+            name: ""
+            metadata: {}
+      patches:
+        - fromFieldPath: "spec.parameters.escaped_certname"
+          toFieldPath: "spec.forProvider.name"
+        - fromFieldPath: "spec.parameters.clustername"
+          toFieldPath: "spec.forProvider.metadata.clustername"
+        - fromFieldPath: "spec.parameters.role"
+          toFieldPath: "spec.forProvider.metadata.role"
+        - fromFieldPath: "spec.parameters.datacenter"
+          toFieldPath: "spec.forProvider.metadata.dc"
+        - fromFieldPath: "spec.parameters.certname"
+          toFieldPath: "spec.forProvider.metadata.certname"
+
+    # Vault Identity Entity Alias
+    - name: vault_identity_entity_alias
+      base:
+        apiVersion: identity.vault.upbound.io/v1alpha1
+        kind: EntityAlias
+        metadata:
+          generateName: "entity-alias-"
+        spec:
+          forProvider:
+            name: ""  # Set by patch
+            mountAccessor: "auth_cert_c2609068"  # Set by patch
+            canonicalId: ""  # Set by patch
+      patches:
+        - fromFieldPath: "spec.parameters.certname"
+          toFieldPath: "spec.forProvider.name"
+        - fromFieldPath: "vault_identity_entity.status.atProvider.id"
+          toFieldPath: "spec.forProvider.canonicalId"
+#        - type: "FromCompositeFieldPath"
+#          fromFieldPath: "spec.parameters.auth_accessor"
+#          toFieldPath: "spec.forProvider.mountAccessor"

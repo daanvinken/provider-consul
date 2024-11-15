@@ -93,7 +93,6 @@ spec:
             - type: string
               string:
                 fmt: "policy-%s"
-
     # Consul ACL Token Resource
     - name: consul_acl_token
       base:

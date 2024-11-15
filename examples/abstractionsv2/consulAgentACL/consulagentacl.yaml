@@ -1,0 +1,13 @@
+apiVersion: daanvinken.io/v1alpha1
+kind: ConsulAgentACL
+metadata:
+  name: daanvi-test
+spec:
+  parameters:
+    realhostname: "daanvi.example.com"
+    escaped_certname: "daanvi-example-com"
+    puppet_ca: "/path/to/puppet/ca.pem"
+    certname: "daanvi.example.com"
+    role: "example-role"
+    auth_accessor: "auth-accessor-id"
+    datacenter: "AMS2"

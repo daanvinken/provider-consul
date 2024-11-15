@@ -1,0 +1,70 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: consulagentacls.daanvinken.io
+spec:
+  group: daanvinken.io
+  names:
+    kind: ConsulAgentACL
+    plural: consulagentacls
+  claimNames:
+    kind: ConsulAgentACL
+    plural: consulagentacls
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                parameters:
+                  type: object
+                  properties:
+                    realhostname:
+                      type: string
+                      description: "The real hostname of the agent node."
+                    escaped_certname:
+                      type: string
+                      description: "The escaped certificate name for the agent."
+                    puppet_ca:
+                      type: string
+                      description: "Path to the Puppet CA certificate for the Vault Cert Auth Backend Role."
+                    certname:
+                      type: string
+                      description: "Common name for allowed certificates in Vault Cert Auth Backend Role."
+                    role:
+                      type: string
+                      description: "The role assigned to the agent."
+                    auth_accessor:
+                      type: string
+                      description: "The accessor ID for the Vault Identity Entity Alias."
+                    datacenter:
+                      type: string
+                      description: "The datacenter where the agent is located."
+            status:
+              type: object
+              properties:
+                accessorID:
+                  type: string
+                  description: "The accessor ID from Consul ACL Token."
+
+      additionalPrinterColumns:
+        - name: Hostname
+          type: string
+          description: "The real hostname of the agent node."
+          jsonPath: ".spec.parameters.realhostname"
+        - name: Role
+          type: string
+          description: "The role assigned to the agent."
+          jsonPath: ".spec.parameters.role"
+        - name: Datacenter
+          type: string
+          description: "The datacenter where the agent is located."
+          jsonPath: ".spec.parameters.datacenter"
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp

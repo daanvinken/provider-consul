@@ -1,0 +1,12 @@
+apiVersion: daanvinken.io/v1alpha1
+kind: ConsulAgentACL
+metadata:
+  name: vidaan-test
+spec:
+  parameters:
+    realhostname: "vidaan.example.com"
+    escaped_certname: "vidaan-example-com"
+    puppet_ca: "/path/to/puppet/ca.pem"
+    certname: "vidaan.example.com"
+    role: "example-role-2"
+    datacenter: "AMS2"
