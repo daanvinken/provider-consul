@@ -1,0 +1,10 @@
+apiVersion: daanvinken.io/v1alpha1
+kind: ConsulAgentACL
+metadata:
+  name: tester-test
+spec:
+  parameters:
+    realhostname: "tester.example.com"
+    escaped_certname: "tester-example-com"
+    certname: "tester.example.com"
+    datacenter: "AMS2"

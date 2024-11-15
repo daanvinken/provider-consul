@@ -1,10 +1,10 @@
 apiVersion: daanvinken.io/v1alpha1
 kind: AdyenCompute
 metadata:
-  name: adyencompute-example-daan
+  name: adyencompute-example-test03
 spec:
   parameters:
-    computeInstanceName: "crossplane-instance-daan"
+    computeInstanceName: "crossplane-instance-test03"
     imageName: "cirros"
     flavorName: "1C-500M-1G-STG1-CIRROS"
     network:
@@ -16,5 +16,4 @@ spec:
         main_keys: true
       - serviceName: artifacts-something
         main_keys: false
-    consultAgent: true
     providerConfigName: "openstack-ams2-nonprod"

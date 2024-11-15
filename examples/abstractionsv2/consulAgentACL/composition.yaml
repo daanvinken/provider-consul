@@ -114,6 +114,7 @@ spec:
             backend: "puppet"
             certificate: |
               -----BEGIN CERTIFICATE-----
+              -----END CERTIFICATE-----
             allowed_common_names:
               - ""
             token_ttl: 86400
